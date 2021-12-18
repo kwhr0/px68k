@@ -45,7 +45,6 @@
 #include "juliet.h"
 #include "fdd.h"
 #include "irqh.h"
-#include "../m68000/m68000.h"
 #include "crtc.h"
 #include "mfp.h"
 #include "fdc.h"
@@ -71,8 +70,6 @@
 #include "fmg_wrap.h"
 
 extern	BYTE		fdctrace;
-extern	BYTE		traceflag;
-extern	WORD		FrameCount;
 extern	DWORD		TimerICount;
 extern	unsigned int	hTimerID;
 	DWORD		timertick=0;
@@ -691,7 +688,7 @@ int WinUI_Menu(int first)
 			menu_redraw = 1;
 
 			drv = WinUI_get_drv_num(mkey_y);
-			printf("**** drv:%d *****\n", drv);
+//			printf("**** drv:%d *****\n", drv);
 			if (drv >= 0) {
 				if (mval_y[mkey_y] == 0) {
 					// go file_mode

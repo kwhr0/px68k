@@ -1,9 +1,9 @@
-// cisc¥¿¥ó¥Î¥¨¥í¥¬¥¾¥¦¥­¥Ü¥ó¥Ì¤ò¶¯°ú¤Ë¤±¤í¤Ô¡¼¤Ë·Ò¤°¤¿¤á¤Î
-// extern "C" ¤ÎÆþ¤ìÊý¤¬¤­¤Á¤ã¤Ê¤¯¤Æ¥¹¥Æ¥­¡Ê¤©
+// ciscã‚¿ãƒ³ãƒŽã‚¨ãƒ­ã‚¬ã‚¾ã‚¦ã‚­ãƒœãƒ³ãƒŒã‚’å¼·å¼•ã«ã‘ã‚ã´ãƒ¼ã«ç¹‹ããŸã‚ã®
+// extern "C" ã®å…¥ã‚Œæ–¹ãŒãã¡ã‚ƒãªãã¦ã‚¹ãƒ†ã‚­ï¼ˆã‰
 
-// readme.txt¤Ë½¾¤Ã¤Æ¡¢²þÊÑÅÀ¡§
-//  - opna.cpp¤ËYMF288ÍÑ¤Î¥¯¥é¥¹ÄÉ²Ã¤·¤Æ¤Þ¤¹¡£OPNA¤½¤Î¤Þ¤ó¤Þ¤À¤±¤É¤Í¡Ê¤Û¤ó¤È¤ÏÀµ¤·¤¯¤Ê¤¤¤¬¤Þ¤¢¤¤¤¤¤ä¡Ë
-//  - Â¿Ê¬Â¾¤ÏÏ®¤Ã¤Æ¤Ê¤¤¤Ï¤º¡Ä¡Ä
+// readme.txtã«å¾“ã£ã¦ã€æ”¹å¤‰ç‚¹ï¼š
+//  - opna.cppã«YMF288ç”¨ã®ã‚¯ãƒ©ã‚¹è¿½åŠ ã—ã¦ã¾ã™ã€‚OPNAãã®ã¾ã‚“ã¾ã ã‘ã©ã­ï¼ˆã»ã‚“ã¨ã¯æ­£ã—ããªã„ãŒã¾ã‚ã„ã„ã‚„ï¼‰
+//  - å¤šåˆ†ä»–ã¯å¼„ã£ã¦ãªã„ã¯ãšâ€¦â€¦
 
 extern "C" {
 
@@ -69,7 +69,7 @@ void MyOPM::WriteIO(DWORD adr, BYTE data)
 #if 0
 				RMData[RMPtrW].time = timeGetTime();
 				RMData[RMPtrW].reg  = CurReg;
-if ( CurReg==0x14 ) data &= 0xf3;	// Int Enable¤Ï¥Þ¥¹¥¯¤¹¤ë
+if ( CurReg==0x14 ) data &= 0xf3;	// Int Enableã¯ãƒžã‚¹ã‚¯ã™ã‚‹
 				RMData[RMPtrW].data = data;
 				RMPtrW = newptr;
 			}
@@ -78,7 +78,7 @@ if ( CurReg==0x14 ) data &= 0xf3;	// Int Enable¤Ï¥Þ¥¹¥¯¤¹¤ë
 			}
 			RMData[RMPtrW].time = timeGetTime();
 			RMData[RMPtrW].reg  = CurReg;
-if ( CurReg==0x14 ) data &= 0xf3;	// Int Enable¤Ï¥Þ¥¹¥¯¤¹¤ë
+if ( CurReg==0x14 ) data &= 0xf3;	// Int Enableã¯ãƒžã‚¹ã‚¯ã™ã‚‹
 			RMData[RMPtrW].data = data;
 			RMPtrW = newptr;
 #endif
@@ -182,7 +182,7 @@ void FASTCALL OPM_Timer(DWORD step)
 
 void OPM_SetVolume(BYTE vol)
 {
-	int v = (vol)?((16-vol)*4):192;		// ¤³¤Î¤¯¤é¤¤¤«¤Ê¤¡
+	int v = (vol)?((16-vol)*4):192;		// ã“ã®ãã‚‰ã„ã‹ãªã
 	if ( opm ) opm->SetVolume(-v);
 }
 
@@ -202,9 +202,9 @@ void OPM_RomeoOut(unsigned int delay)
 }
 
 // ----------------------------------------------------------
-// ---------------------------- YMF288 (Ëþ³«ÈÇ¤Þ¡Á¤­¤å¤ê¡Á)
+// ---------------------------- YMF288 (æº€é–‹ç‰ˆã¾ã€œãã‚…ã‚Šã€œ)
 // ----------------------------------------------------------
-// TODO : ROMEO¤Î288¤òÃ¡¤¯¤Î
+// TODO : ROMEOã®288ã‚’å©ãã®
 
 class YMF288 : public FM::Y288
 {
@@ -351,8 +351,8 @@ void FASTCALL M288_Timer(DWORD step)
 
 void M288_SetVolume(BYTE vol)
 {
-	int v1 = (vol)?((16-vol)*4-24):192;		// ¤³¤Î¤¯¤é¤¤¤«¤Ê¤¡
-	int v2 = (vol)?((16-vol)*4):192;		// ¾¯¤·¾®¤µ¤á¤Ë
+	int v1 = (vol)?((16-vol)*4-24):192;		// ã“ã®ãã‚‰ã„ã‹ãªã
+	int v2 = (vol)?((16-vol)*4):192;		// å°‘ã—å°ã•ã‚ã«
 	if ( ymf288a ) {
 		ymf288a->SetVolumeFM(-v1);
 		ymf288a->SetVolumePSG(-v2);

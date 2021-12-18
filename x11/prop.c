@@ -24,7 +24,7 @@
  */
 
 /* -------------------------------------------------------------------------- *
- *  PROP.C - ³Æ¼ïÀßÄêÍÑ¥×¥í¥Ñ¥Æ¥£¥·¡¼¥È¤ÈÀßÄêÃÍ´ÉÍı                           *
+ *  PROP.C - å„ç¨®è¨­å®šç”¨ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‚·ãƒ¼ãƒˆã¨è¨­å®šå€¤ç®¡ç†                           *
  * -------------------------------------------------------------------------- */
 
 #include <sys/stat.h>
@@ -40,8 +40,7 @@ BYTE	LastCode = 0;
 BYTE	KEYCONFFILE[] = "xkeyconf.dat";
 
 int	CurrentHDDNo = 0;
-
-BYTE ini_title[] = "WinX68k";
+static const char ini_title[] = "WinX68k";
 
 static const char MIDI_TYPE_NAME[4][3] = {
 	"LA", "GM", "GS", "XG"
@@ -482,7 +481,7 @@ void SaveConfig(void)
 
 	for (i = 0; i < 2; i++)
 	{
-		printf("i: %d", i);
+		//printf("i: %d", i);
 		sprintf(buf, "FDD%d", i);
 		WritePrivateProfileString(ini_title, buf, Config.FDDImage[i], winx68k_ini);
 	}
@@ -605,7 +604,7 @@ PropPage_Init(void)
 	    gtk_label_new("Others"));
 	gtk_widget_show(note);
 
-	/* ¥Ú¡¼¥¸²¼Éô¥Ü¥¿¥ó */
+	/* ãƒšãƒ¼ã‚¸ä¸‹éƒ¨ãƒœã‚¿ãƒ³ */
 	ok_button = gtk_button_new_with_label("OK");
 	gtk_table_attach_defaults(GTK_TABLE(dialog_table), ok_button,
 	    1, 2, 9, 10);

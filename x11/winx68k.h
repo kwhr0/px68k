@@ -11,13 +11,15 @@
 extern int rfd_sock;
 #endif
 
+extern FILE *testlog;
+
 #define vline HOGEvline // workaround for redefinition of 'vline'
 
 #define		SCREEN_WIDTH		768
 #define		SCREEN_HEIGHT		512
 
-#define		FULLSCREEN_WIDTH	800
-#define		FULLSCREEN_HEIGHT	600
+#define		FULLSCREEN_WIDTH	1024
+#define		FULLSCREEN_HEIGHT	848
 #define		FULLSCREEN_POSX		((FULLSCREEN_WIDTH - SCREEN_WIDTH) / 2)
 #define		FULLSCREEN_POSY		((FULLSCREEN_HEIGHT - SCREEN_HEIGHT) / 2)
 
@@ -41,6 +43,9 @@ extern const BYTE PrgTitle[];
 #if defined(ANDROID) || TARGET_OS_IPHONE
 extern int realdisp_w, realdisp_h;
 #endif
+
+extern int m68000_ICountBk;
+extern int ICount;
 
 int WinX68k_Reset(void);
 

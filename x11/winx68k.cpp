@@ -1,3 +1,22 @@
+#include "tiny68000.h"
+#include "test.h"
+
+#ifdef TESTLOG
+#define LOOP		10000
+#define STEP		1
+#else
+#define LOOP		0
+#define STEP		n
+#endif
+
+M68000 m68000;
+void newirq(int level) {
+	m68000.IRQ(level);
+}
+unsigned newgetpc(void) {
+	return m68000.GetPC();
+}
+
 #ifdef  __cplusplus
 extern "C" {
 #endif 
@@ -5,6 +24,9 @@ extern "C" {
 #include <SDL.h>
 #ifdef USE_OGLES11
 #include <SDL_opengles.h>
+#endif
+#ifndef NEWMPU
+#include "../m68000/m68000.h"
 #endif
 #include "common.h"
 #include "fileio.h"
@@ -17,8 +39,6 @@ extern "C" {
 #include "winx68k.h"
 #include "windraw.h"
 #include "winui.h"
-#include "../x68k/m68000.h" // xxx ¤³¤ì¤Ï¤¤¤º¤ì¤¤¤é¤Ê¤¯¤Ê¤ë¤Ï¤º
-#include "../m68000/m68000.h"
 #include "../x68k/memory.h"
 #include "mfp.h"
 #include "opm.h"
@@ -50,15 +70,16 @@ extern "C" {
 #include "dswin.h"
 #include "fmg_wrap.h"
 
+#include "irqh.h"
+
 #ifdef RFMDRV
 int rfd_sock;
 #endif
 
-  //#define WIN68DEBUG
+int m68000_ICountBk;
+int ICount;
 
-#ifdef WIN68DEBUG
-#include "d68k.h"
-#endif
+FILE *testlog;
 
 //#include "../icons/keropi_mono.xbm"
 
@@ -91,7 +112,6 @@ DWORD SoundSampleRate;
 unsigned int hTimerID = 0;
 DWORD TimerICount = 0;
 extern DWORD timertick;
-BYTE traceflag = 0;
 
 BYTE ForceDebugMode = 0;
 DWORD skippedframes = 0;
@@ -113,21 +133,21 @@ void
 WinX68k_SCSICheck(void)
 {
 	static const BYTE SCSIIMG[] = {
-		0x00, 0xfc, 0x00, 0x14,			// $fc0000 SCSIµ¯Æ°ÍÑ¤Î¥¨¥ó¥È¥ê¥¢¥É¥ì¥¹
-		0x00, 0xfc, 0x00, 0x16,			// $fc0004 IOCS¥Ù¥¯¥¿ÀßÄê¤Î¥¨¥ó¥È¥ê¥¢¥É¥ì¥¹(É¬¤º"Human"¤Î8¥Ğ¥¤¥ÈÁ°)
+		0x00, 0xfc, 0x00, 0x14,			// $fc0000 SCSIèµ·å‹•ç”¨ã®ã‚¨ãƒ³ãƒˆãƒªã‚¢ãƒ‰ãƒ¬ã‚¹
+		0x00, 0xfc, 0x00, 0x16,			// $fc0004 IOCSãƒ™ã‚¯ã‚¿è¨­å®šã®ã‚¨ãƒ³ãƒˆãƒªã‚¢ãƒ‰ãƒ¬ã‚¹(å¿…ãš"Human"ã®8ãƒã‚¤ãƒˆå‰)
 		0x00, 0x00, 0x00, 0x00,			// $fc0008 ?
-		0x48, 0x75, 0x6d, 0x61,			// $fc000c ¢­
-		0x6e, 0x36, 0x38, 0x6b,			// $fc0010 ID "Human68k"	(É¬¤ºµ¯Æ°¥¨¥ó¥È¥ê¥İ¥¤¥ó¥È¤ÎÄ¾Á°)
-		0x4e, 0x75,				// $fc0014 "rts"		(µ¯Æ°¥¨¥ó¥È¥ê¥İ¥¤¥ó¥È)
-		0x23, 0xfc, 0x00, 0xfc, 0x00, 0x2a,	// $fc0016 ¢­		(IOCS¥Ù¥¯¥¿ÀßÄê¥¨¥ó¥È¥ê¥İ¥¤¥ó¥È)
+		0x48, 0x75, 0x6d, 0x61,			// $fc000c â†“
+		0x6e, 0x36, 0x38, 0x6b,			// $fc0010 ID "Human68k"	(å¿…ãšèµ·å‹•ã‚¨ãƒ³ãƒˆãƒªãƒã‚¤ãƒ³ãƒˆã®ç›´å‰)
+		0x4e, 0x75,				// $fc0014 "rts"		(èµ·å‹•ã‚¨ãƒ³ãƒˆãƒªãƒã‚¤ãƒ³ãƒˆ)
+		0x23, 0xfc, 0x00, 0xfc, 0x00, 0x2a,	// $fc0016 â†“		(IOCSãƒ™ã‚¯ã‚¿è¨­å®šã‚¨ãƒ³ãƒˆãƒªãƒã‚¤ãƒ³ãƒˆ)
 		0x00, 0x00, 0x07, 0xd4,			// $fc001c "move.l #$fc002a, $7d4.l"
 		0x74, 0xff,				// $fc0020 "moveq #-1, d2"
 		0x4e, 0x75,				// $fc0022 "rts"
 //		0x53, 0x43, 0x53, 0x49, 0x49, 0x4e,	// $fc0024 ID "SCSIIN"
-// ÆâÂ¢SCSI¤òON¤Ë¤¹¤ë¤È¡¢SASI¤Ï¼«Æ°Åª¤ËOFF¤Ë¤Ê¤Ã¤Á¤ã¤¦¤é¤·¤¤¡Ä
-// ¤è¤Ã¤Æ¡¢ID¤Ï¥Ş¥Ã¥Á¤·¤Ê¤¤¤è¤¦¤Ë¤·¤Æ¤ª¤¯¡Ä
+// å†…è”µSCSIã‚’ONã«ã™ã‚‹ã¨ã€SASIã¯è‡ªå‹•çš„ã«OFFã«ãªã£ã¡ã‚ƒã†ã‚‰ã—ã„â€¦
+// ã‚ˆã£ã¦ã€IDã¯ãƒãƒƒãƒã—ãªã„ã‚ˆã†ã«ã—ã¦ãŠãâ€¦
 		0x44, 0x55, 0x4d, 0x4d, 0x59, 0x20,	// $fc0024 ID "DUMMY "
-		0x70, 0xff,				// $fc002a "moveq #-1, d0"	(SCSI IOCS¥³¡¼¥ë¥¨¥ó¥È¥ê¥İ¥¤¥ó¥È)
+		0x70, 0xff,				// $fc002a "moveq #-1, d0"	(SCSI IOCSã‚³ãƒ¼ãƒ«ã‚¨ãƒ³ãƒˆãƒªãƒã‚¤ãƒ³ãƒˆ)
 		0x4e, 0x75,				// $fc002c "rts"
 	};
 
@@ -140,7 +160,7 @@ WinX68k_SCSICheck(void)
 
 	scsi = 0;
 	for (i = 0x30600; i < 0x30c00; i += 2) {
-#if 0 // 4¤ÎÇÜ¿ô¤Ç¤Ï¤Ê¤¤¶ö¿ô¥¢¥É¥ì¥¹¤«¤é¤Î4¥Ğ¥¤¥ÈÄ¹¥¢¥¯¥»¥¹¤ÏMIPS¤Ë¤ÏÌµÍı
+#if 0 // 4ã®å€æ•°ã§ã¯ãªã„å¶æ•°ã‚¢ãƒ‰ãƒ¬ã‚¹ã‹ã‚‰ã®4ãƒã‚¤ãƒˆé•·ã‚¢ã‚¯ã‚»ã‚¹ã¯MIPSã«ã¯ç„¡ç†
 		p = (DWORD *)(&IPL[i]);
 		if (*p == 0x0000fc00)
 			scsi = 1;
@@ -155,14 +175,14 @@ WinX68k_SCSICheck(void)
 #endif
 	}
 
-	// SCSI¥â¥Ç¥ë¤Î¤È¤­
+	// SCSIãƒ¢ãƒ‡ãƒ«ã®ã¨ã
 	if (scsi) {
-		ZeroMemory(IPL, 0x2000);		// ËÜÂÎ¤Ï8kb
-		memset(&IPL[0x2000], 0xff, 0x1e000);	// »Ä¤ê¤Ï0xff
-		memcpy(IPL, SCSIIMG, sizeof(SCSIIMG));	// ¥¤¥ó¥Á¥­SCSI BIOS
+		ZeroMemory(IPL, 0x2000);		// æœ¬ä½“ã¯8kb
+		memset(&IPL[0x2000], 0xff, 0x1e000);	// æ®‹ã‚Šã¯0xff
+		memcpy(IPL, SCSIIMG, sizeof(SCSIIMG));	// ã‚¤ãƒ³ãƒã‚­SCSI BIOS
 //		Memory_SetSCSIMode();
 	} else {
-		// SASI¥â¥Ç¥ë¤ÏIPL¤¬¤½¤Î¤Ş¤Ş¸«¤¨¤ë
+		// SASIãƒ¢ãƒ‡ãƒ«ã¯IPLãŒãã®ã¾ã¾è¦‹ãˆã‚‹
 		memcpy(IPL, &IPL[0x20000], 0x20000);
 	}
 }
@@ -184,14 +204,14 @@ WinX68k_LoadROMs(void)
 	}
 
 	if (fp == 0) {
-		Error("BIOS ROM ¥¤¥á¡¼¥¸¤¬¸«¤Ä¤«¤ê¤Ş¤»¤ó.");
+		Error("BIOS ROM ã‚¤ãƒ¡ãƒ¼ã‚¸ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“.");
 		return FALSE;
 	}
 
 	File_Read(fp, &IPL[0x20000], 0x20000);
 	File_Close(fp);
 
-	WinX68k_SCSICheck();	// SCSI IPL¤Ê¤é¡¢$fc0000¡Á¤ËSCSI BIOS¤òÃÖ¤¯
+	WinX68k_SCSICheck();	// SCSI IPLãªã‚‰ã€$fc0000ã€œã«SCSI BIOSã‚’ç½®ã
 
 	for (i = 0; i < 0x40000; i += 2) {
 		tmp = IPL[i];
@@ -201,19 +221,19 @@ WinX68k_LoadROMs(void)
 
 	fp = File_OpenCurDir((char *)FONTFILE);
 	if (fp == 0) {
-		// cgrom.tmp¤¬¤¢¤ë¡©
+		// cgrom.tmpãŒã‚ã‚‹ï¼Ÿ
 		fp = File_OpenCurDir((char *)FONTFILETMP);
 		if (fp == 0) {
 #if 1
-			// ¥Õ¥©¥ó¥ÈÀ¸À® XXX
-			printf("¥Õ¥©¥ó¥ÈROM¥¤¥á¡¼¥¸¤¬¸«¤Ä¤«¤ê¤Ş¤»¤ó\n");
+			// ãƒ•ã‚©ãƒ³ãƒˆç”Ÿæˆ XXX
+			printf("ãƒ•ã‚©ãƒ³ãƒˆROMã‚¤ãƒ¡ãƒ¼ã‚¸ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“\n");
 			return FALSE;
 #else
 			MessageBox(hWndMain,
-				"¥Õ¥©¥ó¥ÈROM¥¤¥á¡¼¥¸¤¬¸«¤Ä¤«¤ê¤Ş¤»¤ó.\nWindows¥Õ¥©¥ó¥È¤«¤é¿·µ¬¤ËºîÀ®¤·¤Ş¤¹.",
-				"¤±¤í¤Ô¡¼¤Î¥á¥Ã¥»¡¼¥¸", MB_ICONWARNING | MB_OK);
+				"ãƒ•ã‚©ãƒ³ãƒˆROMã‚¤ãƒ¡ãƒ¼ã‚¸ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“.\nWindowsãƒ•ã‚©ãƒ³ãƒˆã‹ã‚‰æ–°è¦ã«ä½œæˆã—ã¾ã™.",
+				"ã‘ã‚ã´ãƒ¼ã®ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸", MB_ICONWARNING | MB_OK);
 			SSTP_SendMes(SSTPMES_MAKEFONT);
-			make_cgromdat(FONT, FALSE, "£Í£Ó ¥´¥·¥Ã¥¯", "£Í£Ó ÌÀÄ«");
+			make_cgromdat(FONT, FALSE, "ï¼­ï¼³ ã‚´ã‚·ãƒƒã‚¯", "ï¼­ï¼³ æ˜æœ");
 			//WinX68k_MakeFont();
 			//DialogBox(hInst, MAKEINTRESOURCE(IDD_PROGBAR),
 			//		hWndMain, (DLGPROC)MakeFontProc);
@@ -238,15 +258,15 @@ int
 WinX68k_Reset(void)
 {
 	OPM_Reset();
-
+#ifdef NEWMPU
+	(int &)MEM[0] = (IPL[0x30003]<<24)|(IPL[0x30002]<<16)|(IPL[0x30001]<<8)|IPL[0x30000];
+	(int &)MEM[4] = (IPL[0x30007]<<24)|(IPL[0x30006]<<16)|(IPL[0x30005]<<8)|IPL[0x30004];
+	m68000.Reset();
+#else
 	C68k_Reset(&C68K);
-//	C68k_Set_Reg(&C68K, C68K_A7, (IPL[0x30001]<<24)|(IPL[0x30000]<<16)|(IPL[0x30003]<<8)|IPL[0x30002]);
-//	C68k_Set_Reg(&C68K, C68K_PC, (IPL[0x30005]<<24)|(IPL[0x30004]<<16)|(IPL[0x30007]<<8)|IPL[0x30006]);
 	C68k_Set_AReg(&C68K, 7, (IPL[0x30001]<<24)|(IPL[0x30000]<<16)|(IPL[0x30003]<<8)|IPL[0x30002]);
 	C68k_Set_PC(&C68K, (IPL[0x30005]<<24)|(IPL[0x30004]<<16)|(IPL[0x30007]<<8)|IPL[0x30006]);
-
-
-	
+#endif
 	Memory_Init();
 	CRTC_Init();
 	DMA_Init();
@@ -267,7 +287,6 @@ WinX68k_Reset(void)
 	MIDI_Init();
 	//WinDrv_Init();
 
-//	C68K.ICount = 0;
 	m68000_ICountBk = 0;
 	ICount = 0;
 
@@ -288,15 +307,30 @@ WinX68k_Init(void)
 #else
 #define MEM_SIZE 0xc00000
 #endif
-	IPL = (BYTE*)malloc(0x40000);
-	MEM = (BYTE*)malloc(MEM_SIZE);
-	FONT = (BYTE*)malloc(0xc0000);
+	MEM = (BYTE*)malloc(0x1000000); // 16MB
+	IPL = MEM + 0xfc0000;
+	FONT = MEM + 0xf00000;
 
 	if (MEM)
 		ZeroMemory(MEM, MEM_SIZE);
 
 	if (MEM && FONT && IPL) {
-	  	m68000_init();  
+#ifdef NEWMPU
+		m68000.SetMemoryPtr(MEM);
+		m68000.SetIntrVecFunc(my_irqh_callback);
+#ifdef TESTLOG
+		m68000.SetIORange32(0, 0x1000000);
+#else
+		m68000.SetIORange32(0xc00000, 0x1000000);
+#endif
+#else
+	  	m68000_init();
+#endif
+#ifdef TESTLOG
+		char path[256];
+		sprintf(path, "%s/Desktop/testlog.txt", getenv("HOME"));
+		testlog = fopen(path, "w");
+#endif
 		return TRUE;
 	} else
 		return FALSE;
@@ -305,24 +339,16 @@ WinX68k_Init(void)
 void
 WinX68k_Cleanup(void)
 {
-
-	if (IPL) {
-		free(IPL);
-		IPL = 0;
-	}
 	if (MEM) {
 		free(MEM);
 		MEM = 0;
 	}
-	if (FONT) {
-		free(FONT);
-		FONT = 0;
-	}
+	if (testlog) fclose(testlog);
 }
 
 #define CLOCK_SLICE 200
 // -----------------------------------------------------------------------------------
-//  ¥³¥¢¤Î¤á¤¤¤ó¤ë¡¼¤×
+//  ã‚³ã‚¢ã®ã‚ã„ã‚“ã‚‹ãƒ¼ã·
 // -----------------------------------------------------------------------------------
 void WinX68k_Exec(void)
 {
@@ -368,8 +394,6 @@ void WinX68k_Exec(void)
 
 	do {
 		int m, n = (ICount>CLOCK_SLICE)?CLOCK_SLICE:ICount;
-//		C68K.ICount = m68000_ICountBk = 0;			// ³ä¤ê¹ş¤ßÈ¯À¸Á°¤ËÍ¿¤¨¤Æ¤ª¤«¤Ê¤¤¤È¥À¥á¡ÊCARAT¡Ë
-
 		if ( hsync ) {
 			hsync = 0;
 			clk_line = 0;
@@ -385,63 +409,28 @@ void WinX68k_Exec(void)
 					MFP_Int(9);
 			} else {
 				if ( CRTC_VEND>=VLINE_TOTAL ) {
-					if ( (long)vline==(CRTC_VEND-VLINE_TOTAL) ) MFP_Int(9);		// ¥¨¥­¥µ¥¤¥Æ¥£¥ó¥°¥¢¥ï¡¼¤È¤«¡ÊTOTAL<VEND¡Ë
+					if ( (long)vline==(CRTC_VEND-VLINE_TOTAL) ) MFP_Int(9);		// ã‚¨ã‚­ã‚µã‚¤ãƒ†ã‚£ãƒ³ã‚°ã‚¢ãƒ¯ãƒ¼ã¨ã‹ï¼ˆTOTAL<VENDï¼‰
 				} else {
-					if ( (long)vline==(VLINE_TOTAL-1) ) MFP_Int(9);			// ¥¯¥ì¥¤¥¸¡¼¥¯¥é¥¤¥Ş¡¼¤Ï¥³¥ì¤Ç¤Ê¤¤¤È¥À¥á¡©
+					if ( (long)vline==(VLINE_TOTAL-1) ) MFP_Int(9);			// ã‚¯ãƒ¬ã‚¤ã‚¸ãƒ¼ã‚¯ãƒ©ã‚¤ãƒãƒ¼ã¯ã‚³ãƒ¬ã§ãªã„ã¨ãƒ€ãƒ¡ï¼Ÿ
 				}
 			}
 		}
 
-#ifdef WIN68DEBUG
-		if (traceflag/*&&fdctrace*/)
 		{
-			FILE *fp;
-			static DWORD oldpc;
-			int i;
-			char buf[200];
-			fp=fopen("_trace68.txt", "a");
-			for (i=0; i<HSYNC_CLK; i++)
-			{
-				m68k_disassemble(buf, C68k_Get_Reg(&C68K, C68K_PC));
-//				if (MEM[0xa84c0]) /**test=1; */tracing=1000;
-//				if (regs.pc==0x9d2a) tracing=5000;
-//				if ((regs.pc>=0x2000)&&((regs.pc<=0x8e0e0))) tracing=50000;
-//				if (regs.pc<0x10000) tracing=1;
-//				if ( (regs.pc&1) )
-//				fp=fopen("_trace68.txt", "a");
-//				if ( (regs.pc==0x7176) /*&& (Memory_ReadW(oldpc)==0xff1a)*/ ) tracing=100;
-//				if ( (/*((regs.pc>=0x27000) && (regs.pc<=0x29000))||*/((regs.pc>=0x27000) && (regs.pc<=0x29000))) && (oldpc!=regs.pc))
-				if (/*fdctrace&&*/(oldpc != C68k_Get_Reg(&C68K, C68K_PC)))
-				{
-//					//tracing--;
-				  fprintf(fp, "D0:%08X D1:%08X D2:%08X D3:%08X D4:%08X D5:%08X D6:%08X D7:%08X CR:%04X\n", C68K.D[0], C68K.D[1], C68K.D[2], C68K.D[3], C68K.D[4], C68K.D[5], C68K.D[6], C68K.D[7], 0/* xxx ¤È¤ê¤¢¤¨¤º0 C68K.ccr */);
-				  fprintf(fp, "A0:%08X A1:%08X A2:%08X A3:%08X A4:%08X A5:%08X A6:%08X A7:%08X SR:%04X\n", C68K.A[0], C68K.A[1], C68K.A[2], C68K.A[3], C68K.A[4], C68K.A[5], C68K.A[6], C68K.A[7], C68k_Get_Reg(&C68K, C68K_SR) >> 8/* regs.sr_high*/);
-					fprintf(fp, "<%04X> (%08X ->) %08X : %s\n", Memory_ReadW(C68k_Get_Reg(&C68K, C68K_PC)), oldpc, C68k_Get_Reg(&C68K, C68K_PC), buf);
-				}
-				oldpc = C68k_Get_Reg(&C68K, C68K_PC);
-//				C68K.ICount = 1;
-//				C68k_Exec(&C68K, C68K.ICount);
-				C68k_Exec(&C68K, 1);
-			}
-			fclose(fp);
-			usedclk = clk_line = HSYNC_CLK;
-			clk_count = clk_next;
-		}
-		else
+#ifdef NEWMPU
+			if (testlog) fprintf(testlog, "\n%06x ", newgetpc());
+			m68000.Execute(STEP);
+#else
+			if (testlog) fprintf(testlog, "\n%06x ", C68K.PC-C68K.BasePC);
+			C68k_Exec(&C68K, STEP);
 #endif
-		{
-//			C68K.ICount = n;
-//			C68k_Exec(&C68K, C68K.ICount);
-			C68k_Exec(&C68K, n);
-//			m = (n-C68K.ICount-m68000_ICountBk);			// ·Ğ²á¥¯¥í¥Ã¥¯¿ô
-			m = (n-m68000_ICountBk);			// ·Ğ²á¥¯¥í¥Ã¥¯¿ô
+			m = (n-m68000_ICountBk);			// çµŒéã‚¯ãƒ­ãƒƒã‚¯æ•°
 			ClkUsed += m*10;
 			usedclk = ClkUsed/clkdiv;
 			clk_line += usedclk;
 			ClkUsed -= usedclk*clkdiv;
 			ICount -= m;
 			clk_count += m;
-//			C68K.ICount = m68000_ICountBk = 0;
 		}
 
 		MFP_Timer(usedclk);
@@ -457,11 +446,11 @@ void WinX68k_Exec(void)
 			if ( (MFP[MFP_AER]&0x40)&&(vline==CRTC_IntLine) )
 				MFP_Int(1);
 			if ( (!DispFrame)&&(vline>=CRTC_VSTART)&&(vline<CRTC_VEND) ) {
-				if ( CRTC_VStep==1 ) {				// HighReso 256dot¡Ê2ÅÙÆÉ¤ß¡Ë
+				if ( CRTC_VStep==1 ) {				// HighReso 256dotï¼ˆ2åº¦èª­ã¿ï¼‰
 					if ( vline%2 )
 						WinDraw_DrawLine();
 				} else if ( CRTC_VStep==4 ) {		// LowReso 512dot
-					WinDraw_DrawLine();				// 1ÁöººÀş¤Ç2²óÉÁ¤¯¡Ê¥¤¥ó¥¿¡¼¥ì¡¼¥¹¡Ë
+					WinDraw_DrawLine();				// 1èµ°æŸ»ç·šã§2å›æãï¼ˆã‚¤ãƒ³ã‚¿ãƒ¼ãƒ¬ãƒ¼ã‚¹ï¼‰
 					VLINE++;
 					WinDraw_DrawLine();
 				} else {							// High 512dot / Low 256dot
@@ -494,12 +483,12 @@ void WinX68k_Exec(void)
 		}
 	} while ( vline<VLINE_TOTAL );
 
-	if ( CRTC_Mode&2 ) {		// FastClr¥Ó¥Ã¥È¤ÎÄ´À°¡ÊPITAPAT¡Ë
-		if ( CRTC_FastClr ) {	// FastClr=1 ³î¤Ä CRTC_Mode&2 ¤Ê¤é ½ªÎ»
+	if ( CRTC_Mode&2 ) {		// FastClrãƒ“ãƒƒãƒˆã®èª¿æ•´ï¼ˆPITAPATï¼‰
+		if ( CRTC_FastClr ) {	// FastClr=1 ä¸”ã¤ CRTC_Mode&2 ãªã‚‰ çµ‚äº†
 			CRTC_FastClr--;
 			if ( !CRTC_FastClr )
 				CRTC_Mode &= 0xfd;
-		} else {				// FastClr³«»Ï
+		} else {				// FastClré–‹å§‹
 			if ( CRTC_Regs[0x29]&0x10 )
 				CRTC_FastClr = 1;
 			else
@@ -652,7 +641,7 @@ int main(int argc, char *argv[])
 	SDL_DisplayMode sdl_dispmode;
 	SDL_GetCurrentDisplayMode(0, &sdl_dispmode);
 	p6logd("width: %d height: %d", sdl_dispmode.w, sdl_dispmode.h);
-	// ¥Ê¥Ó¥²¡¼¥·¥ç¥ó¥Ğ¡¼¤ò½ü¤¯¥¢¥×¥ê¤¬¿¨¤ì¤ë²èÌÌ
+	// ãƒŠãƒ“ã‚²ãƒ¼ã‚·ãƒ§ãƒ³ãƒãƒ¼ã‚’é™¤ãã‚¢ãƒ—ãƒªãŒè§¦ã‚Œã‚‹ç”»é¢
 	realdisp_w = sdl_dispmode.w, realdisp_h = sdl_dispmode.h;
 
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 1 );
@@ -663,7 +652,7 @@ int main(int argc, char *argv[])
 #if TARGET_OS_IPHONE
 	sdl_window = SDL_CreateWindow(APPNAME" SDL", 0, 0, FULLSCREEN_WIDTH, FULLSCREEN_HEIGHT, SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_BORDERLESS);
 #else
-	// for Android: window size¤Î»ØÄê¤Ï´Ø·¸¤Ê¤¯¥Õ¥ë¥¹¥¯¥ê¡¼¥ó¤Ë¤Ê¤ë¤ß¤¿¤¤
+	// for Android: window sizeã®æŒ‡å®šã¯é–¢ä¿‚ãªããƒ•ãƒ«ã‚¹ã‚¯ãƒªãƒ¼ãƒ³ã«ãªã‚‹ã¿ãŸã„
 	sdl_window = SDL_CreateWindow(APPNAME" SDL", 0, 0, FULLSCREEN_WIDTH, FULLSCREEN_HEIGHT, SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN);
 #endif
 #else
@@ -683,10 +672,10 @@ int main(int argc, char *argv[])
 	glEnable(GL_BLEND);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	//glViewport(0, 0, 800, 600); //¤³¤³¤òÁı¤ä¤µ¤Ê¤¤¤ÈOpenGL¤Î²èÌÌ¤Ï¤»¤Ş¤¤
+	//glViewport(0, 0, 800, 600); //ã“ã“ã‚’å¢—ã‚„ã•ãªã„ã¨OpenGLã®ç”»é¢ã¯ã›ã¾ã„
 	glViewport(0, 0, sdl_dispmode.w, sdl_dispmode.h);
-	// ¥¹¥Ş¥Û¤ä¥¿¥Ö¤Î¼Â²èÌÌ¤Ë´Ø·¸¤Ê¤¯OpenGL¤ÎÉÁ²èÎÎ°è¤ò800x600¤È¤¹¤ë¡£
-	// 800x600¤Ë¤·¤¿°ÕÌ£¤ÏÆÃ¤Ë¤Ê¤¤¡£
+	// ã‚¹ãƒãƒ›ã‚„ã‚¿ãƒ–ã®å®Ÿç”»é¢ã«é–¢ä¿‚ãªãOpenGLã®æç”»é ˜åŸŸã‚’800x600ã¨ã™ã‚‹ã€‚
+	// 800x600ã«ã—ãŸæ„å‘³ã¯ç‰¹ã«ãªã„ã€‚
 	glOrthof(0, 800, 600, 0, -1, 1);
 	//  glOrthof(0, 1024, 0, 1024, -1, 1);
 	glMatrixMode(GL_MODELVIEW);
@@ -721,7 +710,7 @@ int main(int argc, char *argv[])
 		exit (1);
 	}
 
-	Keyboard_Init(); //WinDraw_Init()Á°¤Ë°ÜÆ°
+	Keyboard_Init(); //WinDraw_Init()å‰ã«ç§»å‹•
 
 	if (!WinDraw_Init()) {
 		WinDraw_Cleanup();
@@ -752,7 +741,7 @@ int main(int argc, char *argv[])
 	Timer_Init();
 
 	MIDI_Init();
-	MIDI_SetMimpiMap(Config.ToneMapFile);	// ²»¿§ÀßÄê¥Õ¥¡¥¤¥ë»ÈÍÑÈ¿±Ç
+	MIDI_SetMimpiMap(Config.ToneMapFile);	// éŸ³è‰²è¨­å®šãƒ•ã‚¡ã‚¤ãƒ«ä½¿ç”¨åæ˜ 
 	MIDI_EnableMimpiDef(Config.ToneMap);
 
 	if (sdlaudio == 0 && !DSound_Init(Config.SampleRate, Config.BufferSize)) {
@@ -767,7 +756,7 @@ int main(int argc, char *argv[])
 #endif
 	DSound_Play();
 
-	// command line ¤«¤é»ØÄê¤·¤¿¾ì¹ç
+	// command line ã‹ã‚‰æŒ‡å®šã—ãŸå ´åˆ
 	switch (argc) {
 	case 3:
 		strcpy(Config.FDDImage[1], argv[2]);
@@ -780,8 +769,8 @@ int main(int argc, char *argv[])
 	FDD_SetFD(1, Config.FDDImage[1], 0);
 
 	//SDL_StartTextInput();
-
-	while (1) {
+	SDL_SetRelativeMouseMode(SDL_TRUE);
+	for (int i = 0; i <= LOOP; i += LOOP > 0) {
 		// OPM_RomeoOut(Config.BufferSize * 5);
 		if (menu_mode == menu_out
 		    && (Config.NoWaitMode || Timer_GetCount())) {
@@ -814,8 +803,17 @@ int main(int argc, char *argv[])
 			case SDL_QUIT:
 				goto end_loop;
 			case SDL_MOUSEMOTION:
-				p6logd("x:%d y:%d xrel:%d yrel:%d\n", ev.motion.x, ev.motion.y, ev.motion.xrel, ev.motion.yrel);
-				break;
+                    Mouse_Event(0, .1f * Config.MouseSpeed * ev.motion.xrel * TextDotX / WindowX,
+								.1f * Config.MouseSpeed * ev.motion.yrel * TextDotY / WindowY);
+                    break;
+                case SDL_MOUSEBUTTONDOWN:
+                    if (ev.button.button == SDL_BUTTON_LEFT) Mouse_Event(1, 1, 0);
+                    if (ev.button.button == SDL_BUTTON_RIGHT) Mouse_Event(2, 1, 0);
+                    break;
+                case SDL_MOUSEBUTTONUP:
+                    if (ev.button.button == SDL_BUTTON_LEFT) Mouse_Event(1, 0, 0);
+                    if (ev.button.button == SDL_BUTTON_RIGHT) Mouse_Event(2, 0, 0);
+                    break;
 #if defined(ANDROID) || TARGET_OS_IPHONE
 			case SDL_APP_WILLENTERBACKGROUND:
 				DSound_Stop();
@@ -876,31 +874,32 @@ int main(int argc, char *argv[])
 					break;
 				}
 #endif
-				printf("keydown: 0x%x\n", ev.key.keysym.sym);
-				printf("font %d %d\n", FONT[100], FONT[101]);
+//				printf("keydown: 0x%x\n", ev.key.keysym.sym);
+//				printf("font %d %d\n", FONT[100], FONT[101]);
 				if (ev.key.keysym.sym == SDLK_F12) {
 					if (menu_mode == menu_out) {
 						menu_mode = menu_enter;
 						DSound_Stop();
+						SDL_SetRelativeMouseMode(SDL_FALSE);
 					} else {
 						DSound_Play();
 						menu_mode = menu_out;
+						SDL_SetRelativeMouseMode(SDL_TRUE);
 					}
 				}
-#ifdef WIN68DEBUG
-				if (ev.key.keysym.sym == SDLK_F10) {
-					traceflag ^= 1;
-					printf("trace %s\n", (traceflag)?"on":"off");
-				}
-#endif
 				if (menu_mode != menu_out) {
 					menu_key_down = ev.key.keysym.sym;
+					if (menu_state == ms_key && ev.key.keysym.sym == SDLK_ESCAPE) {
+						DSound_Play();
+						menu_mode = menu_out;
+						SDL_SetRelativeMouseMode(SDL_TRUE);
+					}
 				} else {
 					Keyboard_KeyDown(ev.key.keysym.sym);
 				}
 				break;
 			case SDL_KEYUP:
-				printf("keyup: 0x%x\n", ev.key.keysym.sym);
+//				printf("keyup: 0x%x\n", ev.key.keysym.sym);
 				Keyboard_KeyUp(ev.key.keysym.sym);
 				break;
 			}
@@ -921,7 +920,7 @@ int main(int argc, char *argv[])
 		if (menu_mode == menu_out
 		    && Joystick_get_downstate_psp(PSP_CTRL_SELECT)) {
 			Keyboard_ToggleSkbd();
-			// 2ÅÙÆÉ¤ß½ü¤±
+			// 2åº¦èª­ã¿é™¤ã‘
 			Joystick_reset_downstate_psp(PSP_CTRL_SELECT);
 		}
 
@@ -1009,9 +1008,9 @@ int main(int argc, char *argv[])
 
 	}
 end_loop:
-	Memory_WriteB(0xe8e00d, 0x31);	// SRAM½ñ¤­¹ş¤ßµö²Ä
-	Memory_WriteD(0xed0040, Memory_ReadD(0xed0040)+1); // ÀÑ»»²ÔÆ¯»ş´Ö(min.)
-	Memory_WriteD(0xed0044, Memory_ReadD(0xed0044)+1); // ÀÑ»»µ¯Æ°²ó¿ô
+	Memory_WriteB(0xe8e00d, 0x31);	// SRAMæ›¸ãè¾¼ã¿è¨±å¯
+	Memory_WriteD(0xed0040, Memory_ReadD(0xed0040)+1); // ç©ç®—ç¨¼åƒæ™‚é–“(min.)
+	Memory_WriteD(0xed0044, Memory_ReadD(0xed0044)+1); // ç©ç®—èµ·å‹•å›æ•°
 
 	OPM_Cleanup();
 #ifndef	NO_MERCURY

@@ -3,7 +3,6 @@
 
 #include "common.h"
 
-extern	BYTE	GVRAM[0x80000];
 extern	WORD	Grp_LineBuf[1024];
 extern	WORD	Grp_LineBufSP[1024];
 extern	WORD	Grp_LineBufSP2[1024];

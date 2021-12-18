@@ -1,12 +1,11 @@
 // ---------------------------------------------------------------------------------------
-//  MERCURY.C - ¤Ş¡Á¤­¤å¤ê¡Á¤æ¤Ë¤Ã¤È
+//  MERCURY.C - ã¾ã€œãã‚…ã‚Šã€œã‚†ã«ã£ã¨
 // ---------------------------------------------------------------------------------------
 
 #include "common.h"
 #include "dswin.h"
 #include "fmg_wrap.h"
 #include "dmac.h"
-#include "m68000.h"
 #include "irqh.h"
 #include "mercury.h"
 #include <math.h>
@@ -34,7 +33,6 @@ static int Mcry_SampleCnt = 0;
 static BYTE Mcry_Vector = 255;
 
 extern BYTE BusErrFlag;
-extern	m68k_regs regs;
 
 
 DWORD FASTCALL Mcry_IntCB(BYTE irq)
@@ -65,7 +63,7 @@ int Mcry_IsReady(void)
 
 
 // -----------------------------------------------------------------------
-//   MPU·Ğ²á¥¯¥í¥Ã¥¯»ş´ÖÊ¬¤À¤±¥Ç¡¼¥¿¤ò¥Ğ¥Ã¥Õ¥¡¤ËÎ¯¤á¤ë
+//   MPUçµŒéã‚¯ãƒ­ãƒƒã‚¯æ™‚é–“åˆ†ã ã‘ãƒ‡ãƒ¼ã‚¿ã‚’ãƒãƒƒãƒ•ã‚¡ã«æºœã‚ã‚‹
 // -----------------------------------------------------------------------
 void FASTCALL Mcry_PreUpdate(DWORD clock)
 {
@@ -80,7 +78,7 @@ void FASTCALL Mcry_PreUpdate(DWORD clock)
 
 
 // -----------------------------------------------------------------------
-//   DSound¤«¤é¤ÎÍ×µáÊ¬¤À¤±¥Ğ¥Ã¥Õ¥¡¤òËä¤á¤ë
+//   DSoundã‹ã‚‰ã®è¦æ±‚åˆ†ã ã‘ãƒãƒƒãƒ•ã‚¡ã‚’åŸ‹ã‚ã‚‹
 // -----------------------------------------------------------------------
 void FASTCALL Mcry_Update(signed short *buffer, DWORD length)
 {
@@ -122,7 +120,7 @@ void FASTCALL Mcry_Update(signed short *buffer, DWORD length)
 
 
 // -----------------------------------------------------------------------
-//   1²óÊ¬¡Ê1Word x 2ch¡Ë¤Î¥Ç¡¼¥¿¤ò¥Ğ¥Ã¥Õ¥¡¤Ë½ñ¤­½Ğ¤·
+//   1å›åˆ†ï¼ˆ1Word x 2chï¼‰ã®ãƒ‡ãƒ¼ã‚¿ã‚’ãƒãƒƒãƒ•ã‚¡ã«æ›¸ãå‡ºã—
 // -----------------------------------------------------------------------
 INLINE void Mcry_WriteOne(void)
 {
@@ -148,7 +146,7 @@ void FASTCALL Mcry_Write(DWORD adr, BYTE data)
 	{
 		if ( Mcry_SampleCnt<=0 ) return;
 		if ( Mcry_Status&2 ) {		// Stereo
-			if (Mcry_LRTiming)		// ±¦
+			if (Mcry_LRTiming)		// å³
 			{
 				if (!(Mcry_Status&8)) data=0;	// R Mute
 				if (adr&1)			// Low Byte
@@ -162,7 +160,7 @@ void FASTCALL Mcry_Write(DWORD adr, BYTE data)
 					Mcry_OutDataR = (Mcry_OutDataR&0x00ff)|((WORD)data<<8);
 				}
 			}
-			else				// º¸
+			else				// å·¦
 			{
 				if (!(Mcry_Status&4)) data=0;	// L Mute
 				if (adr&1)			// Low Byte
@@ -207,7 +205,7 @@ fclose(fp);
 	{
 		Mcry_Vector = data;
 	}
-	else if ( (adr>=0xecc0c0)&&(adr<=0xecc0c7)&&(adr&1) )	// Ëş³«ÈÇ¤Ş¡¼¤­¤å¤ê¡¼ OPN
+	else if ( (adr>=0xecc0c0)&&(adr<=0xecc0c7)&&(adr&1) )	// æº€é–‹ç‰ˆã¾ãƒ¼ãã‚…ã‚Šãƒ¼ OPN
 	{
 /*{
 FILE* fp = fopen("_mercury.txt", "a");
@@ -244,7 +242,7 @@ BYTE FASTCALL Mcry_Read(DWORD adr)
 	{
 		ret = Mcry_Vector;
 	}
-	else if ( (adr>=0xecc0c0)&&(adr<=0xecc0c7)&&(adr&1) )	// Ëş³«ÈÇ¤Ş¡¼¤­¤å¤ê¡¼ OPN
+	else if ( (adr>=0xecc0c0)&&(adr<=0xecc0c7)&&(adr&1) )	// æº€é–‹ç‰ˆã¾ãƒ¼ãã‚…ã‚Šãƒ¼ OPN
 	{
 		ret = M288_Read((BYTE)((adr>>1)&3));
 /*{
@@ -263,7 +261,7 @@ fclose(fp);
 
 
 // -----------------------------------------------------------------------
-//   ºÆÀ¸¥¯¥í¥Ã¥¯ÀßÄê
+//   å†ç”Ÿã‚¯ãƒ­ãƒƒã‚¯è¨­å®š
 // -----------------------------------------------------------------------
 void Mcry_SetClock(void)
 {
@@ -277,7 +275,7 @@ void Mcry_SetClock(void)
 
 
 // -----------------------------------------------------------------------
-//   ¤Ü¤ê¤å¡¼¤àÀßÄê
+//   ã¼ã‚Šã‚…ãƒ¼ã‚€è¨­å®š
 // -----------------------------------------------------------------------
 void Mcry_SetVolume(BYTE vol)
 {
@@ -293,7 +291,7 @@ void Mcry_SetVolume(BYTE vol)
 
 
 // -----------------------------------------------------------------------
-//   ½é´ü²½¡Á
+//   åˆæœŸåŒ–ã€œ
 // -----------------------------------------------------------------------
 void Mcry_Init(DWORD samplerate, const char* path)
 {

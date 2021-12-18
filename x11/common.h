@@ -1,6 +1,9 @@
 #ifndef winx68k_common_h
 #define winx68k_common_h
 
+#define WO_C68K		// これを定義するとC68Kをビルドに含めない
+// NEWMPU,TESTLOGはビルド時間の関係でtest.hで定義
+
 #include "windows.h"
 #include <stdio.h>
 #include <string.h>
@@ -47,6 +50,8 @@ extern "C" {
 
 void Error(const char* s);
 void p6logd(const char *fmt, ...);
+unsigned newgetpc(void);
+void newirq(int);
 
 #ifdef __cplusplus
 }

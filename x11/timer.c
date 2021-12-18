@@ -1,9 +1,10 @@
 // -----------------------------------------------------------------------
-//   55.6fps•≠°º•◊Õ—§ø§§§ﬁ°º
+//   55.6fps„Ç≠„Éº„ÉóÁî®„Åü„ÅÑ„Åæ„Éº
 // -----------------------------------------------------------------------
 #include "common.h"
 #include "crtc.h"
 #include "mfp.h"
+#include <unistd.h>
 
 DWORD	timercnt = 0;
 DWORD	tick = 0;
@@ -31,6 +32,14 @@ WORD Timer_GetCount(void)
 		timercnt -= TIMEBASE;
 		if ( timercnt>=(TIMEBASE*2) ) timercnt = 0;
 		return 1;
-	} else
+	} else {
+#if 1
+		usleep((TIMEBASE - timercnt) / 10);
+		timercnt = 0;
+		tick = timeGetTime();
+		return 1;
+#else
 		return 0;
+#endif
+	}
 }

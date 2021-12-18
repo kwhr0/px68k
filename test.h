@@ -1,0 +1,2 @@
+#define NEWMPU
+//#define TESTLOG

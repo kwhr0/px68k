@@ -41,10 +41,8 @@ struct keyboard_key kbd_key[] = {
 #include "keytbl.inc"
 };
 
-extern BYTE traceflag;
-
 #if defined(PSP) || defined(ANDROID) || TARGET_OS_IPHONE
-// •≠°º•‹°º•…§Œ∫¬…∏
+// „Ç≠„Éº„Éú„Éº„Éâ„ÅÆÂ∫ßÊ®ô
 int kbd_x = 800, kbd_y = 0, kbd_w = 766, kbd_h = 218;
 #endif
 
@@ -58,10 +56,10 @@ Keyboard_Init(void)
 	KeyEnable = 1;
 	KeyIntFlag = 0;
 #ifdef PSP
-	// ¡¥§∆§Œ•µ•§•∫§Ú»æ ¨§À§π§Î
+	// ÂÖ®„Å¶„ÅÆ„Çµ„Ç§„Ç∫„ÇíÂçäÂàÜ„Å´„Åô„Çã
 	int i = 0;
 
-	kbd_x = kbd_y = 0; // PSP§œΩÈ¥¸∞Ã√÷0
+	kbd_x = kbd_y = 0; // PSP„ÅØÂàùÊúü‰ΩçÁΩÆ0
 	kbd_w /= 2, kbd_h /= 2;
 
 	while (kbd_key[i].x != -1) {
@@ -75,7 +73,7 @@ Keyboard_Init(void)
 }
 
 // ----------------------------------
-//	§∆°º§÷§ÎŒ‡
+//	„Å¶„Éº„Å∂„ÇãÈ°û
 // ----------------------------------
 
 #define	NC	0
@@ -92,13 +90,13 @@ BYTE KeyTable[KEYTABLE_MAX] = {
 	//	    ,    ,    , ESC,    ,    ,    ,    		; 0x18
 		  NC,  NC,  NC,0x01,  NC,  NC,  NC,  NC,
 	//	 SPC,  ! ,  " ,  # ,  $ ,  % ,  & ,  '		; 0x20
-		0x35,0x02,0x03,0x04,0x05,0x06,0x07,0x08,
+		0x35,0x02,0x03,0x04,0x05,0x06,0x07,0x28,
 	//	  ( ,  ) ,  * ,  + ,  , ,  - ,  . ,  /		; 0x28
 		0x09,0x0a,0x28,0x27,0x31,0x0c,0x32,0x33,
 	//	  0 ,  1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7		; 0x30
 		0x0b,0x02,0x03,0x04,0x05,0x06,0x07,0x08,
 	//	  8 ,  9 ,  ; ,  : ,  < ,  = ,  > ,  ? 		; 0x38
-		0x09,0x0a,0x28,0x27,0x31,0x0c,0x32,0x33,
+		0x09,0x0a,0x28,0x27,0x31,0x0d,0x32,0x33,
 	//	  @ ,  A ,  B ,  C ,  D ,  E ,  F ,  G		; 0x40
 		0x1b,0x1e,0x2e,0x2c,0x20,0x13,0x21,0x22,
 	//	  H ,  I ,  J ,  K ,  L ,  M ,  N ,  O		; 0x48
@@ -154,7 +152,7 @@ BYTE KeyTable[KEYTABLE_MAX] = {
 		  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
 	//	  BS, TAB,  LF, CLR,    , RET,    ,   		; 0x08
 		0x0f,0x10,0x1d,  NC,  NC,0x1d,  NC,  NC,
-	//	    ,  ¢¨,  ¢≠,  ¢™,  ¢´,SYSQ,    ,  		; 0x10
+	//	    ,  ‚Üë,  ‚Üì,  ‚Üí,  ‚Üê,SYSQ,    ,  		; 0x10
 		  NC,0x3c,0x3e,0x3d,0x3b,  NC,  NC,  NC,
 	//	    ,    ,    , ESC,    ,    ,    ,   		; 0x18
 		  NC,  NC,0x63,0x01,  NC,  NC,  NC,  NC,
@@ -170,7 +168,7 @@ BYTE KeyTable[KEYTABLE_MAX] = {
 		  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
 	//	    ,    ,    ,    ,    ,    ,    ,   		; 0x48
 		  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
-	//	HOME,  ¢´,  ¢¨,  ¢™,  ¢≠,RLDN,RLUP, END		; 0x50
+	//	HOME,  ‚Üê,  ‚Üë,  ‚Üí,  ‚Üì,RLDN,RLUP, END		; 0x50
 		0x36,0x3b,0x3c,0x3d,0x3e,0x39,0x38,0x3a,
 	//	    ,    ,    ,    ,    ,    ,    ,   		; 0x58
 		  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
@@ -186,9 +184,9 @@ BYTE KeyTable[KEYTABLE_MAX] = {
 		  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
 	//	    ,<TAB,    ,    ,    ,<ENT,    ,  		; 0x88
 		  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
-	//	    ,    ,    ,    ,    ,<HOM,<¢´>,<¢¨>		; 0x90
+	//	    ,    ,    ,    ,    ,<HOM,<‚Üê>,<‚Üë>		; 0x90
 		  NC,  NC,  NC,  NC,  NC,0x36,0x3b,0x3c,
-	//	<¢™>,<¢≠>,<RDN,<RUP,<END,    ,<INS,<DEL		; 0x98
+	//	<‚Üí>,<‚Üì>,<RDN,<RUP,<END,    ,<INS,<DEL		; 0x98
 		0x3d,0x3e,0x39,0x38,0x3a,  NC,0x5e,0x37,
 	//	    ,    ,    ,    ,    ,    ,    ,    		; 0xa0
 		  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
@@ -304,7 +302,7 @@ BYTE KeyTableMaster[KEYTABLE_MAX] = {
 		  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
 	//	    ,    ,    ,    ,    ,    ,    ,   		; 0x48
 		  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
-	//	HOME,  ¢´,  ¢¨,  ¢™,  ¢≠,RLDN,RLUP, END		; 0x50
+	//	HOME,  ‚Üê,  ‚Üë,  ‚Üí,  ‚Üì,RLDN,RLUP, END		; 0x50
 		0x36,  NC,  NC,  NC,  NC,0x39,0x38,0x3a,
 	//	    ,    ,    ,    ,    ,    ,    ,   		; 0x58
 		  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
@@ -320,9 +318,9 @@ BYTE KeyTableMaster[KEYTABLE_MAX] = {
 		  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
 	//	    ,<TAB,    ,    ,    ,<ENT,    ,  		; 0x88
 		  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
-	//	    ,    ,    ,    ,    ,<HOM,<¢´>,<¢¨>		; 0x90
+	//	    ,    ,    ,    ,    ,<HOM,<‚Üê>,<‚Üë>		; 0x90
 		  NC,  NC,  NC,  NC,  NC,0x36,  NC,  NC,
-	//	<¢™>,<¢≠>,<RDN,<RUP,<END,    ,<INS,<DEL		; 0x98
+	//	<‚Üí>,<‚Üì>,<RDN,<RUP,<END,    ,<INS,<DEL		; 0x98
 		  NC,  NC,0x39,0x38,0x3a,  NC,0x5e,0x37,
 	//	    ,    ,    ,    ,    ,    ,    ,    		; 0xa0
 		  NC,  NC,  NC,  NC,  NC,  NC,  NC,  NC,
@@ -474,7 +472,7 @@ static BYTE get_x68k_keycode(DWORD wp)
 }
 
 // ----------------------------------
-//	WM_KEYDOWN°¡
+//	WM_KEYDOWN„Äú
 // ----------------------------------
 void
 Keyboard_KeyDown(DWORD wp)
@@ -498,9 +496,9 @@ Keyboard_KeyDown(DWORD wp)
 		return;
 	}
 
-	printf("Keyboard_KeyDown: ");
-	printf("wp=0x%x, code=0x%x\n", wp, code);
-	printf("SDLK_UP: 0x%x", SDLK_UP);
+//	printf("Keyboard_KeyDown: ");
+//	printf("wp=0x%x, code=0x%x\n", wp, code);
+//	printf("SDLK_UP: 0x%x", SDLK_UP);
 
 #if 0
 	if (code != NC) {
@@ -515,11 +513,10 @@ Keyboard_KeyDown(DWORD wp)
 	send_keycode(code, P6K_DOWN);
 #endif
 
-	printf("JoyKeyState: 0x%x\n", JoyKeyState);
+//	printf("JoyKeyState: 0x%x\n", JoyKeyState);
 
 	switch (wp) {
 	case SDLK_UP:
-		puts("key up");
 		if (!(JoyKeyState&JOY_DOWN))
 			JoyKeyState |= JOY_UP;
 		break;
@@ -540,7 +537,6 @@ Keyboard_KeyDown(DWORD wp)
 		break;
 
 	case SDLK_z:
-		puts("key z");
 		if (Config.JoyKeyReverse)
 			JoyKeyState |= JOY_TRG2;
 		else
@@ -548,7 +544,6 @@ Keyboard_KeyDown(DWORD wp)
 		break;
 
 	case SDLK_x:
-		puts("key x");
 		if (Config.JoyKeyReverse)
 			JoyKeyState |= JOY_TRG1;
 		else
@@ -592,7 +587,7 @@ Keyboard_KeyUp(DWORD wp)
 	send_keycode(code, P6K_UP);
 #endif
 
-	printf("JoyKeyState: 0x%x\n", JoyKeyState);
+//	printf("JoyKeyState: 0x%x\n", JoyKeyState);
 
 	switch(wp) {
 	case SDLK_UP:
@@ -630,14 +625,14 @@ Keyboard_KeyUp(DWORD wp)
 
 // ----------------------------------
 //	Key Check
-//	1•’•Ï°º•‡√Ê§À4≤Û° 2400bps/10bit/60fps§»§π§Ï§–°¢§¿§¨°À∏∆§–§Ï§∆°¢MFP§À•«°º•ø§Ú¡˜§Î
+//	1„Éï„É¨„Éº„É†‰∏≠„Å´4ÂõûÔºà2400bps/10bit/60fps„Å®„Åô„Çå„Å∞„ÄÅ„Å†„ÅåÔºâÂëº„Å∞„Çå„Å¶„ÄÅMFP„Å´„Éá„Éº„Çø„ÇíÈÄÅ„Çã
 // ----------------------------------
 
 void
 Keyboard_Int(void)
 {
 	if (KeyBufRP != KeyBufWP) {
-		printf("KeyBufRP:%d, KeyBufWP:%d\n", KeyBufRP, KeyBufWP);
+//		printf("KeyBufRP:%d, KeyBufWP:%d\n", KeyBufRP, KeyBufWP);
 		if (!KeyIntFlag) {
 			LastKey = KeyBuf[KeyBufRP];
 			KeyBufRP = ((KeyBufRP+1)&(KeyBufSize-1));
@@ -649,11 +644,11 @@ Keyboard_Int(void)
 	}
 }
 
-/********** •Ω•’•»•¶•ß•¢•≠°º•‹°º•… **********/
+/********** „ÇΩ„Éï„Éà„Ç¶„Çß„Ç¢„Ç≠„Éº„Éú„Éº„Éâ **********/
 
 #if defined(PSP) || defined(USE_OGLES11)
 
-// ¡™¬Ú§∑§∆§§§Î•≠°º§Œ∫¬…∏ (ΩÈ¥¸√Õ'Q')
+// ÈÅ∏Êäû„Åó„Å¶„ÅÑ„Çã„Ç≠„Éº„ÅÆÂ∫ßÊ®ô (ÂàùÊúüÂÄ§'Q')
 int  kbd_kx = 1, kbd_ky = 2;
 
 #define KEYXMAX 32767
@@ -704,7 +699,7 @@ static void set_near_key(int p, int tx)
 {
 	while (kbd_key[p].x < kbd_key[p + 1].x) {
 		if (kbd_key[p].x >= tx) {
-			// x∫¬…∏§Œ∞Ï»÷∂·§§•≠°º§À∞‹∆∞§π§Î
+			// xÂ∫ßÊ®ô„ÅÆ‰∏ÄÁï™Ëøë„ÅÑ„Ç≠„Éº„Å´ÁßªÂãï„Åô„Çã
 			if (abs(kbd_key[p].x - tx)
 			    > abs(tx - kbd_key[p - 1].x)) {
 				p--;
@@ -725,7 +720,7 @@ static void key_up(void)
 	p = Keyboard_get_key_ptr(kbd_kx, kbd_ky);
 	tx = kbd_key[p].x;
 
-	// æÂ§Œπ‘§Œ¿Ë∆¨§Ú√µ§π
+	// ‰∏ä„ÅÆË°å„ÅÆÂÖàÈ†≠„ÇíÊé¢„Åô
 	while (p > 0) {
 		if (kbd_key[p - 1].x > kbd_key[p].x) {
 			c--;
@@ -752,7 +747,7 @@ static void key_down(void)
 	p = Keyboard_get_key_ptr(kbd_kx, kbd_ky);
 	tx = kbd_key[p].x;
 
-	// ≤º§Œπ‘§Œ¿Ë∆¨§Ú√µ§π
+	// ‰∏ã„ÅÆË°å„ÅÆÂÖàÈ†≠„ÇíÊé¢„Åô
 	while (kbd_key[p].x != -1) {
 		if (kbd_key[p + 1].x < kbd_key[p].x) {
 			p++;
@@ -765,7 +760,7 @@ static void key_down(void)
 }
 
 
-// dx §» dy §œ§…§¡§È§´∞Ï ˝§œ 0 §»§π§Î°£ dx: -1/0/+1 dy: -1/0/+1
+// dx „Å® dy „ÅØ„Å©„Å°„Çâ„Åã‰∏ÄÊñπ„ÅØ 0 „Å®„Åô„Çã„ÄÇ dx: -1/0/+1 dy: -1/0/+1
 static void mv_key(int dx, int dy)
 {
 	int p;
@@ -785,16 +780,16 @@ static void mv_key(int dx, int dy)
 
 	WinDraw_reverse_key(kbd_kx, kbd_ky);
 
-	// »Ù§–§∑¿Ë§Œ»˘ƒ¥¿∞§¨…¨Õ◊§ §‚§Œ§ø§¡
-	// •´°º•Ω•Î•≠°ºº˛§Í§œÃÃ≈›§ §Œ§«»˘ƒ¥¿∞§ §∑
+	// È£õ„Å∞„ÅóÂÖà„ÅÆÂæÆË™øÊï¥„ÅåÂøÖË¶Å„Å™„ÇÇ„ÅÆ„Åü„Å°
+	// „Ç´„Éº„ÇΩ„É´„Ç≠„ÉºÂë®„Çä„ÅØÈù¢ÂÄí„Å™„ÅÆ„ÅßÂæÆË™øÊï¥„Å™„Åó
 	if (kbd_kx == 12 && kbd_ky == 3 && dx == +1) {
-		// ] §Œ±¶§»§ §Í§œ RET §À»Ù§–§π
+		// ] „ÅÆÂè≥„Å®„Å™„Çä„ÅØ RET „Å´È£õ„Å∞„Åô
 		kbd_kx = 14, kbd_ky = 2;
 	} else if (kbd_kx == 12 && kbd_ky == 5 && dx == +1) {
-		// •∆•Û•≠°º§Œ . §Œ±¶§»§ §Í§œ ENT §À»Ù§–§π
+		// „ÉÜ„É≥„Ç≠„Éº„ÅÆ . „ÅÆÂè≥„Å®„Å™„Çä„ÅØ ENT „Å´È£õ„Å∞„Åô
 		kbd_kx = 19, kbd_ky = 4;
 	} else {
-		// »˘ƒ¥¿∞§Œ…¨Õ◊§ §∑
+		// ÂæÆË™øÊï¥„ÅÆÂøÖË¶Å„Å™„Åó
 		kbd_kx += dx;
 	}
 
@@ -805,13 +800,13 @@ static void mv_key(int dx, int dy)
 		key_down();
 	}
 
-	// RET§Œ∫∏¬¶§Œ•¿•ﬂ°º•≠°º§œRET§À∞‹∆∞§π§Î
+	// RET„ÅÆÂ∑¶ÂÅ¥„ÅÆ„ÉÄ„Éü„Éº„Ç≠„Éº„ÅØRET„Å´ÁßªÂãï„Åô„Çã
 	if (kbd_kx == 13 && kbd_ky == 2) {
 		if (dx == 0) {
-			// æÂ≤º§´§È•¿•ﬂ°º•≠°º§Àπ‘§√§øæÏπÁ
+			// ‰∏ä‰∏ã„Åã„Çâ„ÉÄ„Éü„Éº„Ç≠„Éº„Å´Ë°å„Å£„ÅüÂ†¥Âêà
 			kbd_kx = 14;
 		} else {
-			// ∫∏±¶§´§È•¿•ﬂ°º•≠°º§Àπ‘§√§øæÏπÁ
+			// Â∑¶Âè≥„Åã„Çâ„ÉÄ„Éü„Éº„Ç≠„Éº„Å´Ë°å„Å£„ÅüÂ†¥Âêà
 			kbd_kx += dx;
 		}
 	}
@@ -854,7 +849,7 @@ void Keyboard_skbd(void)
 		send_key(P6K_DOWN);
 	}
 	if (!(joy & JOY_TRG2)) {
-		// BS•≠°º§Úkey down
+		// BS„Ç≠„Éº„Çíkey down
 		send_keycode(0xf, P6K_DOWN);
 	}
 
@@ -864,7 +859,7 @@ void Keyboard_skbd(void)
 		send_key(P6K_UP);
 	}
 	if (joy & JOY_TRG2) {
-		// BS•≠°º§Úkey up
+		// BS„Ç≠„Éº„Çíkey up
 		send_keycode(0xf, P6K_UP);
 	}
 

@@ -6,11 +6,10 @@ extern int winx, winy;
 extern int winh, winw;
 extern int FullScreenFlag;
 extern BYTE Draw_ClrMenu;
-extern WORD FrameCount;
 extern WORD WinDraw_Pal16B, WinDraw_Pal16R, WinDraw_Pal16G;
 
-extern	BYTE	Draw_BitMask[800];
-extern	BYTE	Draw_TextBitMask[800];
+extern	BYTE	Draw_BitMask[];
+extern	BYTE	Draw_TextBitMask[];
 
 extern	int	WindowX;
 extern	int	WindowY;

@@ -1,8 +1,8 @@
 /*	$Id: mem_wrap.c,v 1.2 2003/12/05 18:07:19 nonaka Exp $	*/
 
+#include "test.h"
 #include "common.h"
 #include "memory.h"
-#include "../m68000/m68000.h"
 #include "winx68k.h"
 
 #include "adpcm.h"
@@ -27,8 +27,9 @@
 
 #include "fmg_wrap.h"
 
-void AdrError(DWORD, DWORD);
-void BusError(DWORD, DWORD);
+#ifndef NEWMPU
+#include "../m68000/c68k/c68k.h"
+#endif
 
 static void wm_main(DWORD addr, BYTE val);
 static void wm_cnt(DWORD addr, BYTE val);
@@ -78,7 +79,7 @@ BYTE (FASTCALL *MemReadTable[])(DWORD) = {
 	rm_font, rm_font, rm_font, rm_font, rm_font, rm_font, rm_font, rm_font,
 	rm_font, rm_font, rm_font, rm_font, rm_font, rm_font, rm_font, rm_font,
 	rm_font, rm_font, rm_font, rm_font, rm_font, rm_font, rm_font, rm_font,
-/* SCSI ¤Î¾ì¹ç¤Ï rm_buserr ¤Ë¤Ê¤ë¡© */
+/* SCSI ã®å ´åˆã¯ rm_buserr ã«ãªã‚‹ï¼Ÿ */
 	rm_ipl, rm_ipl, rm_ipl, rm_ipl, rm_ipl, rm_ipl, rm_ipl, rm_ipl,
 	rm_ipl, rm_ipl, rm_ipl, rm_ipl, rm_ipl, rm_ipl, rm_ipl, rm_ipl,
 	rm_ipl, rm_ipl, rm_ipl, rm_ipl, rm_ipl, rm_ipl, rm_ipl, rm_ipl,
@@ -106,7 +107,7 @@ void (FASTCALL *MemWriteTable[])(DWORD, BYTE) = {
 	SRAM_Write, SRAM_Write, SRAM_Write, SRAM_Write, SRAM_Write, SRAM_Write, SRAM_Write, SRAM_Write,
 	wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr,
 	wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr,
-/* ROM¥¨¥ê¥¢¤Ø¤Î½ñ¤­¤³¤ß¤ÏÁ´¤Æ¥Ð¥¹¥¨¥é¡¼ */
+/* ROMã‚¨ãƒªã‚¢ã¸ã®æ›¸ãã“ã¿ã¯å…¨ã¦ãƒã‚¹ã‚¨ãƒ©ãƒ¼ */
 	wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr,
 	wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr,
 	wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr, wm_buserr,
@@ -131,8 +132,7 @@ BYTE *OP_ROM;
 BYTE *FONT;
 
 DWORD BusErrFlag = 0;
-DWORD BusErrHandling = 0;
-DWORD BusErrAdr;
+static DWORD BusErrAdr;
 DWORD MemByteAccess = 0;
 
 /*
@@ -182,37 +182,26 @@ dma_writemem24_dword(DWORD addr, DWORD val)
 void FASTCALL
 cpu_writemem24(DWORD addr, BYTE val)
 {
-
+#ifdef TESTLOG
+	if (testlog) fprintf(testlog, "%06x=%02x ", addr & 0xffffff, val);
+#endif
 	MemByteAccess = 0;
 	BusErrFlag = 0;
 
 	wm_cnt(addr, val);
-	if (BusErrFlag & 2) {
-		Memory_ErrTrace();
-		BusError(addr, val);
-	}
 }
 
 void FASTCALL
 cpu_writemem24_word(DWORD addr, WORD val)
 {
-
+#ifdef TESTLOG
+	if (testlog) fprintf(testlog, "%06x=%04x ", addr & 0xffffff, val);
+#endif
 	MemByteAccess = 0;
-
-	if (addr & 1) {
-		AdrError(addr, val);
-		return;
-	}
-
 	BusErrFlag = 0;
 
 	wm_cnt(addr, (val >> 8) & 0xff);
 	wm_main(addr + 1, val & 0xff);
-
-	if (BusErrFlag & 2) {
-		Memory_ErrTrace();
-		BusError(addr, val);
-	}
 }
 
 void FASTCALL
@@ -220,23 +209,12 @@ cpu_writemem24_dword(DWORD addr, DWORD val)
 {
 
 	MemByteAccess = 0;
-
-	if (addr & 1) {
-		AdrError(addr, val);
-		return;
-	}
-
 	BusErrFlag = 0;
 
 	wm_cnt(addr, (val >> 24) & 0xff);
 	wm_main(addr + 1, (val >> 16) & 0xff);
 	wm_main(addr + 2, (val >> 8) & 0xff);
 	wm_main(addr + 3, val & 0xff);
-
-	if (BusErrFlag & 2) {
-		Memory_ErrTrace();
-		BusError(addr, val);
-	}
 }
 
 static void FASTCALL
@@ -252,10 +230,8 @@ wm_cnt(DWORD addr, BYTE val)
 {
 
 	addr &= 0x00ffffff;
-	if (addr < 0x00a00000) {	// RAM 10MB
+	if (addr < 0x00c00000) {	// RAM 12MB
 		MEM[addr ^ 1] = val;
-	} else if (addr < 0x00c00000) {
-		wm_buserr(addr, val);
 	} else if (addr < 0x00e00000) {
 		GVRAM_Write(addr, val);
 	} else {
@@ -361,11 +337,6 @@ cpu_readmem24(DWORD addr)
 	BYTE v;
 
 	v = rm_main(addr);
-	if (BusErrFlag & 1) {
-		printf("func = %s addr = %x flag = %d\n", __func__, addr, BusErrFlag);
-		Memory_ErrTrace();
-		BusError(addr, 0);
-	}
 	return v;
 }
 
@@ -373,21 +344,10 @@ WORD FASTCALL
 cpu_readmem24_word(DWORD addr)
 {
 	WORD v;
-
-	if (addr & 1) {
-		AdrError(addr, 0);
-		return 0;
-	}
-
 	BusErrFlag = 0;
 
 	v = rm_main(addr++) << 8;
 	v |= rm_main(addr);
-	if (BusErrFlag & 1) {
-		printf("func = %s addr = %x flag = %d\n", __func__, addr, BusErrFlag);
-		Memory_ErrTrace();
-		BusError(addr, 0);
-	}
 	return v;
 }
 
@@ -419,11 +379,8 @@ rm_main(DWORD addr)
 	BYTE v;
 
 	addr &= 0x00ffffff;
-	if (addr < 0x00a00000) {	// RAM 10MB
+	if (addr < 0x00c00000) {	// RAM 12MB
 		v = MEM[addr ^ 1];
-	} else if (addr < 0x00c00000) {
-		rm_buserr(addr);
-		v = 0;
 	} else if (addr < 0x00e00000) {
 		v = GVRAM_Read(addr);
 	} else {
@@ -480,7 +437,7 @@ rm_e82(DWORD addr)
 static BYTE FASTCALL
 rm_buserr(DWORD addr)
 {
-    printf("func = %s addr = %x flag = %d\n", __func__, addr, BusErrFlag);
+//    printf("func = %s addr = %x flag = %d\n", __func__, addr, BusErrFlag);
 
 	BusErrFlag = 1;
 	BusErrAdr = addr;
@@ -488,17 +445,7 @@ rm_buserr(DWORD addr)
 	return 0;
 }
 
-/*
- * Memory misc
- */
-void Memory_Init(void)
-{
-
-//        cpu_setOPbase24((DWORD)C68k_Get_Reg(&C68K, C68K_PC));
-    cpu_setOPbase24((DWORD)C68k_Get_PC(&C68K));
-}
-
-void FASTCALL
+static void FASTCALL
 cpu_setOPbase24(DWORD addr)
 {
 
@@ -522,8 +469,8 @@ cpu_setOPbase24(DWORD addr)
 		else {
 			BusErrFlag = 3;
 			BusErrAdr = addr;
-			Memory_ErrTrace();
-			BusError(addr, 0);
+			//Memory_ErrTrace();
+			//BusError(addr, 0);
 		}
 		break;
 
@@ -533,11 +480,23 @@ cpu_setOPbase24(DWORD addr)
 		else {
 			BusErrFlag = 3;
 			BusErrAdr = addr;
-			Memory_ErrTrace();
-			BusError(addr, 0);
+			//Memory_ErrTrace();
+			//BusError(addr, 0);
 		}
 		break;
 	}
+}
+
+/*
+ * Memory misc
+ */
+void Memory_Init(void)
+{
+#ifdef NEWMPU
+	cpu_setOPbase24(newgetpc());
+#else
+	cpu_setOPbase24((DWORD)C68k_Get_PC(&C68K));
+#endif
 }
 
 void FASTCALL
@@ -548,57 +507,4 @@ Memory_SetSCSIMode(void)
 	for (i = 0xe0; i < 0xf0; i++) {
 		MemReadTable[i] = rm_buserr;
 	}
-}
-
-void FASTCALL
-Memory_ErrTrace(void)
-{
-#ifdef WIN68DEBUG
-	FILE *fp;
-	fp=fopen("_buserr.txt", "a");
-	if (BusErrFlag==3)
-		fprintf(fp, "BusErr - SetOP to $%08X  @ $%08X\n", BusErrAdr, regs.pc);
-	else if (BusErrFlag==2)
-		fprintf(fp, "BusErr - Write to $%08X  @ $%08X\n", BusErrAdr, regs.pc);
-	else
-		fprintf(fp, "BusErr - Read from $%08X  @ $%08X\n", BusErrAdr, regs.pc);
-	fclose(fp);
-//	traceflag ++;
-//	m68000_ICount = 0;
-#endif
-}
-
-void FASTCALL
-Memory_IntErr(int i)
-{
-#ifdef WIN68DEBUG
-	FILE *fp;
-	fp=fopen("_interr.txt", "a");
-	fprintf(fp, "IntErr - Int.No%d  @ $%08X\n", i, regs.pc);
-	fclose(fp);
-#else
-	(void)i;
-#endif
-}
-
-void
-AdrError(DWORD adr, DWORD unknown)
-{
-
-	(void)adr;
-	(void)unknown;
-	printf("AdrError: %x\n", adr);
-	//	assert(0);
-}
-
-void
-BusError(DWORD adr, DWORD unknown)
-{
-
-	(void)adr;
-	(void)unknown;
-
-	printf("BusError: %x\n", adr);
-	BusErrHandling = 1;
-	//assert(0);
 }

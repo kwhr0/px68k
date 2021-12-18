@@ -3,8 +3,6 @@
 
 #include "common.h"
 
-extern	BYTE	SCSIIPL[0x2000];
-
 void SCSI_Init(void);
 void SCSI_Cleanup(void);
 

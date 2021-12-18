@@ -15,17 +15,17 @@ extern	BYTE*	IPL;
 extern	BYTE*	MEM;
 extern	BYTE*	OP_ROM;
 extern	BYTE*	FONT;
-extern  BYTE    SCSIIPL[0x2000];
-extern  BYTE    SRAM[0x4000];
-extern  BYTE    GVRAM[0x80000];
-extern  BYTE   TVRAM[0x80000];
+extern  BYTE*	SCSIIPL;
+extern  BYTE*	SRAM;
+extern  BYTE*	GVRAM;
+extern  BYTE*	TVRAM;
 
 
 extern	DWORD	BusErrFlag;
-extern	DWORD	BusErrAdr;
+//extern	DWORD	BusErrAdr;
 extern	DWORD	MemByteAccess;
 
-void FASTCALL Memory_ErrTrace(void);
+//void FASTCALL Memory_ErrTrace(void);
 void FASTCALL Memory_IntErr(int i);
 
 void Memory_Init(void);
@@ -45,7 +45,7 @@ void FASTCALL dma_writemem24(DWORD adr, BYTE data);
 void FASTCALL dma_writemem24_word(DWORD adr, WORD data);
 void FASTCALL dma_writemem24_dword(DWORD adr, DWORD data);
 
-void FASTCALL cpu_setOPbase24(DWORD adr);
+//void FASTCALL cpu_setOPbase24(DWORD adr);
 
 void FASTCALL Memory_SetSCSIMode(void);
 
