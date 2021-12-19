@@ -103,6 +103,16 @@ void Mouse_SetData(void)
 
 		MouseSt = MouseStat;
 
+#if 1
+		int ax = x >= 0 ? x : -x, ay = y >= 0 ? y : -y, am = ax > ay ? ax : ay;
+		if (am > 0) {
+			float k = 15.f / am;
+			if (k > 1.f) k = 1.f;
+			MouseX = k * x;
+			MouseY = k * y;
+		}
+		else MouseX = MouseY = 0;
+#else
 		if (x > 127) {
 			MouseSt |= 0x10;
 			MouseX = 127;
@@ -122,6 +132,7 @@ void Mouse_SetData(void)
 		} else {
 			MouseY = (signed char)y;
 		}
+#endif
 
 	} else {
 		MouseSt = 0;

@@ -925,11 +925,6 @@ int main(int argc, char *argv[])
 #ifndef MOUSE_GRAB
 		if (targetX >= 0 || targetY >= 0) {
 			int dx = targetX - (short &)MEM[0xace], dy = targetY - (short &)MEM[0xad0];
-			const int DMAX = 15;
-			if (dx < -DMAX) dx = -DMAX;
-			else if (dx > DMAX) dx = DMAX;
-			if (dy < -DMAX) dy = -DMAX;
-			else if (dy > DMAX) dy = DMAX;
 			if (dx || dy) Mouse_Event(0, dx, dy);
 			else targetX = targetY = -1;
 		}
