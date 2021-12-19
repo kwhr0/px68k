@@ -6,8 +6,17 @@
 #include "prop.h"
 #include "sysport.h"
 #include "palette.h"
+#include <unistd.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+
+#define OPEN			0xe8e011
+#define CLOSE			0xe8e013
+#define DATA			0xe8e015
+#define VALID			0xe8e017
 
 BYTE	SysPort[7];
+static int sock = -1, read_ret;
 
 // -----------------------------------------------------------------------
 //   初期化
@@ -47,6 +56,24 @@ void FASTCALL SysPort_Write(DWORD adr, BYTE data)
 		break;
 	case 0xe8e00f:
 		SysPort[6] = data & 15;
+		break;
+	case OPEN:
+		sock = socket(AF_UNIX, SOCK_STREAM, 0);
+		if (sock == -1) break;
+		struct sockaddr_un sa = { 0 };
+		sa.sun_family = AF_UNIX;
+		strcpy(sa.sun_path, "/tmp/px68k");
+		if (connect(sock, (struct sockaddr *)&sa, sizeof(struct sockaddr_un)) == -1) {
+			close(sock);
+			sock = -1;
+		}
+		break;
+	case CLOSE:
+		if (sock != -1) close(sock);
+		sock = -1;
+		break;
+	case DATA:
+		if (sock != -1) write(sock, &data, 1);
 		break;
 	}
 }
@@ -93,6 +120,15 @@ BYTE FASTCALL SysPort_Read(DWORD adr)
 		break;
 	case 0xe8e00f:
 		ret = SysPort[6];
+		break;
+	case OPEN:
+		ret = sock != -1;
+		break;
+	case DATA:
+		read_ret = sock != -1 ? (int)read(sock, &ret, 1) : 0;
+		break;
+	case VALID:
+		ret = read_ret == 1;
 		break;
 	}
 
