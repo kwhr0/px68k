@@ -4,6 +4,7 @@
 #include "common.h"
 
 extern	BYTE	SysPort[7];
+extern DWORD mouseTarget;
 
 void SysPort_Init(void);
 BYTE FASTCALL SysPort_Read(DWORD adr);

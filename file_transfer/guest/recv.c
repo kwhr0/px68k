@@ -18,6 +18,7 @@ int main(int argc, char *argv[]) {
 	}
 	OPEN = 0;
 	if (!OPEN) {
+		fclose(fi);
 		unlink(argv[1]);
 		fprintf(stderr, "cannot connect to the host\n");
 		return 1;

@@ -14,9 +14,11 @@
 #define CLOSE			0xe8e013
 #define DATA			0xe8e015
 #define VALID			0xe8e017
+#define MOUSE			0xe8e019
 
 BYTE	SysPort[7];
-static int sock = -1, read_ret;
+DWORD mouseTarget;
+static int sock = -1, read_ret, mouse_data;
 
 // -----------------------------------------------------------------------
 //   初期化
@@ -75,6 +77,9 @@ void FASTCALL SysPort_Write(DWORD adr, BYTE data)
 	case DATA:
 		if (sock != -1) write(sock, &data, 1);
 		break;
+	case MOUSE:
+		mouse_data = mouseTarget;
+		break;
 	}
 }
 
@@ -129,6 +134,10 @@ BYTE FASTCALL SysPort_Read(DWORD adr)
 		break;
 	case VALID:
 		ret = read_ret == 1;
+		break;
+	case MOUSE:
+		ret = mouse_data;
+		mouse_data >>= 8;
 		break;
 	}
 

@@ -11,6 +11,12 @@
 
 //#define MOUSE_GRAB
 
+#ifdef MOUSE_GRAB
+#define GRAB(f)	SDL_SetRelativeMouseMode(f)
+#else
+#define GRAB(f)
+#endif
+
 M68000 m68000;
 void newirq(int level) {
 	m68000.IRQ(level);
@@ -771,9 +777,7 @@ int main(int argc, char *argv[])
 	FDD_SetFD(1, Config.FDDImage[1], 0);
 
 	//SDL_StartTextInput();
-#ifdef MOUSE_GRAB
-	SDL_SetRelativeMouseMode(SDL_TRUE);
-#endif
+	GRAB(SDL_TRUE);
 	for (int i = 0; i <= LOOP; i += LOOP > 0) {
 		// OPM_RomeoOut(Config.BufferSize * 5);
 		if (menu_mode == menu_out
@@ -802,9 +806,6 @@ int main(int argc, char *argv[])
 #ifndef PSP
 		menu_key_down = SDLK_UNKNOWN;
 
-#ifndef MOUSE_GRAB
-		static int targetX = -1, targetY = -1;
-#endif
 		while (SDL_PollEvent(&ev)) {
 			switch (ev.type) {
 			case SDL_QUIT:
@@ -813,9 +814,6 @@ int main(int argc, char *argv[])
 #ifdef MOUSE_GRAB
 					Mouse_Event(0, .1f * Config.MouseSpeed * ev.motion.xrel * TextDotX / WindowX,
 								.1f * Config.MouseSpeed * ev.motion.yrel * TextDotY / WindowY);
-#else
-					targetX = ev.motion.x * TextDotX / WindowX;
-					targetY = ev.motion.y * TextDotY / WindowY;
 #endif
 					break;
                 case SDL_MOUSEBUTTONDOWN:
@@ -892,15 +890,11 @@ int main(int argc, char *argv[])
 					if (menu_mode == menu_out) {
 						menu_mode = menu_enter;
 						DSound_Stop();
-#ifdef MOUSE_GRAB
-						SDL_SetRelativeMouseMode(SDL_FALSE);
-#endif
+						GRAB(SDL_FALSE);
 					} else {
 						DSound_Play();
 						menu_mode = menu_out;
-#ifdef MOUSE_GRAB
-						SDL_SetRelativeMouseMode(SDL_TRUE);
-#endif
+						GRAB(SDL_TRUE);
 					}
 				}
 				if (menu_mode != menu_out) {
@@ -908,9 +902,7 @@ int main(int argc, char *argv[])
 					if (menu_state == ms_key && ev.key.keysym.sym == SDLK_ESCAPE) {
 						DSound_Play();
 						menu_mode = menu_out;
-#ifdef MOUSE_GRAB
-						SDL_SetRelativeMouseMode(SDL_TRUE);
-#endif
+						GRAB(SDL_TRUE);
 					}
 				} else {
 					Keyboard_KeyDown(ev.key.keysym.sym);
@@ -923,10 +915,12 @@ int main(int argc, char *argv[])
 			}
 		}
 #ifndef MOUSE_GRAB
-		if (targetX >= 0 || targetY >= 0) {
-			int dx = targetX - (short &)MEM[0xace], dy = targetY - (short &)MEM[0xad0];
-			if (dx || dy) Mouse_Event(0, dx, dy);
-			else targetX = targetY = -1;
+		if (SDL_GetWindowFlags(sdl_window) & SDL_WINDOW_INPUT_FOCUS) {
+			int mouseX, mouseY, winX, winY;
+			SDL_GetGlobalMouseState(&mouseX, &mouseY);
+			SDL_GetWindowPosition(sdl_window, &winX, &winY);
+			mouseTarget = (mouseX  * TextDotX / WindowX - winX + TextScrollX & 0xffff) |
+						  (mouseY  * TextDotY / WindowY - winY + TextScrollY) << 16;
 		}
 #endif
 #endif //PSP
