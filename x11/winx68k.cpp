@@ -919,8 +919,8 @@ int main(int argc, char *argv[])
 			int mouseX, mouseY, winX, winY;
 			SDL_GetGlobalMouseState(&mouseX, &mouseY);
 			SDL_GetWindowPosition(sdl_window, &winX, &winY);
-			mouseTarget = (mouseX  * TextDotX / WindowX - winX + TextScrollX & 0xffff) |
-						  (mouseY  * TextDotY / WindowY - winY + TextScrollY) << 16;
+			mouseTarget = ((mouseX - winX) * (int)TextDotX / WindowX + TextScrollX & 0xffff) |
+						  ((mouseY - winY) * (int)TextDotY / WindowY + TextScrollY) << 16;
 		}
 #endif
 #endif //PSP
