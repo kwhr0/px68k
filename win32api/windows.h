@@ -64,10 +64,6 @@ typedef	void *		DRAWITEMSTRUCT;
 #define	MAX_PATH	MAXPATHLEN
 #endif
 
-#ifndef	max
-#define	max(a,b)	(((a) > (b)) ? (a) : (b))
-#endif
-
 #ifndef	AVE
 #define	AVE(a, b)	(((a)+(b))/2)
 #endif

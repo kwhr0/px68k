@@ -5,6 +5,7 @@
 extern "C" {
 #include "memory.h"
 }
+#include <stdint.h>
 
 #define M68000_TRACE		0
 

@@ -9,12 +9,9 @@ DEPEND	 = gccmakedep
 DEPEND_DEFINES =
 
 # for debug
-CDEBUGFLAGS = -g -O0 -fno-strict-aliasing
-
-#
-# enable SDL_gfx
-#
-CDEBUGFLAGS+= -DUSE_SDLGFX
+#CDEBUGFLAGS = -g -O0
+# for release
+CDEBUGFLAGS = -O3
 
 #
 # disable sound
@@ -31,67 +28,25 @@ CDEBUGFLAGS+= -DNO_MERCURY
 #
 #CDEBUGFLAGS+= -DRFMDRV
 
-#
-# for Opt.
-#
-# CDEBUGFLAGS= -O3
-# CDEBUGFLAGS+= -funroll-loops
-# CDEBUGFLAGS+= -fomit-frame-pointer
-# CDEBUGFLAGS+= -ffast-math
-
-# CDEBUGFLAGS+= -march=pentium-m
-# CDEBUGFLAGS+= -msse -mfpmath=sse
-
-#
-# for DEBUG
-#
-# CDEBUGFLAGS= -O0
-# CDEBUGFLAGS+= -g
-# CDEBUGFLAGS+= -W -Wall -Wuninitialized
-# CDEBUGFLAGS+= -Wunused
-# CDEBUGFLAGS+= -Werror
-# CDEBUGFLAGS+= -DINLINE=
-# CDEBUGFLAGS+= -DUSE_GAS
-
 CDEBUGFLAGS+=-DPX68K_VERSION=$(PX68K_VERSION)
 
-ifdef SDL2
-# SDL 2.0
 SDL_CONFIG?= sdl2-config
-else
-# SDL 1.2
-SDL_CONFIG?= sdl-config
-endif
 
 SDL_INCLUDE=	`$(SDL_CONFIG) --cflags`
-ifdef SDL2
-SDL_LIB=	`$(SDL_CONFIG) --libs` -lSDL2_gfx
-else
-SDL_LIB=	`$(SDL_CONFIG) --libs` -lSDL_gfx
-endif
+SDL_LIB=	`$(SDL_CONFIG) --libs`
 
-ifeq ($(shell uname -m),armv6l)
-MOPT=
-else
-ifeq ($(shell uname -m),x86_64)
-MOPT=
-else
-MOPT= -m32
-endif
-endif
+EXTRA_INCLUDES= -I. -I./x11 -I./x68k -I./fmgen -I./win32api $(SDL_INCLUDE)
 
-LDLIBS = -lm
-
-EXTRA_INCLUDES= -I./x11 -I./x68k -I./fmgen -I./win32api $(SDL_INCLUDE)
-
-CXXDEBUGFLAGS= $(CDEBUGFLAGS)
+CXXDEBUGFLAGS= $(CDEBUGFLAGS) -std=c++17
 
 CFLAGS= $(MOPT) $(CDEBUGFLAGS) $(EXTRA_INCLUDES)
 CXXFLAGS= $(MOPT) $(CXXDEBUGFLAGS) $(EXTRA_INCLUDES)
 CXXLDOPTIONS= $(CXXDEBUGFLAGS)
 
+ifneq ($(wildcard m68000),)
 CPUOBJS= x68k/d68k.o m68000/m68000.o
 C68KOBJS= m68000/c68k/c68k.o m68000/c68k/c68kexec.o
+endif
 
 X68KOBJS= x68k/adpcm.o x68k/bg.o x68k/crtc.o x68k/dmac.o x68k/fdc.o x68k/fdd.o x68k/disk_d88.o x68k/disk_dim.o x68k/disk_xdf.o x68k/gvram.o x68k/ioc.o x68k/irqh.o x68k/mem_wrap.o x68k/mercury.o x68k/mfp.o x68k/palette.o x68k/midi.o x68k/pia.o x68k/rtc.o x68k/sasi.o x68k/scc.o x68k/scsi.o x68k/sram.o x68k/sysport.o x68k/tvram.o
 
@@ -104,7 +59,7 @@ X11CXXOBJS= x11/winx68k.o
 WIN32APIOBJS= win32api/dosio.o win32api/fake.o win32api/peace.o
 
 COBJS=		$(X68KOBJS) $(X11OBJS) $(WIN32APIOBJS) $(CPUOBJS) $(C68KOBJS)
-CXXOBJS=	$(FMGENOBJS) $(X11CXXOBJS)
+CXXOBJS=	$(FMGENOBJS) $(X11CXXOBJS) tiny68000.o
 OBJS=		$(COBJS) $(CXXOBJS)
 
 CSRCS=		$(COBJS:.o=.c)
