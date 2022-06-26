@@ -273,7 +273,7 @@ short timertrace = 0;
 // -----------------------------------------------------------------------
 #if 1
 
-static void timersub(long clock, int x, int psnum, int intnum) {
+static void timesub(long clock, int x, int psnum, int intnum) {
 	int t = Timer_Prescaler[psnum & 7];
 	BYTE *tdr = &MFP[MFP_TADR + x];
 	int w = (*tdr ? *tdr : 256) * t;
@@ -291,10 +291,10 @@ static void timersub(long clock, int x, int psnum, int intnum) {
 }
 
 void FASTCALL MFP_Timer(long clock) {
-	if ((!(MFP[MFP_TACR] & 8)) && (MFP[MFP_TACR] & 7)) timersub(clock, 0, MFP[MFP_TACR], 2);
-	if (MFP[MFP_TBCR] & 7) timersub(clock, 1, MFP[MFP_TBCR], 7);
-	if (MFP[MFP_TCDCR] & 0x70) timersub(clock, 2, MFP[MFP_TCDCR] >> 4, 10);
-	if (MFP[MFP_TCDCR] & 7) timersub(clock, 3, MFP[MFP_TCDCR], 11);
+	if ((!(MFP[MFP_TACR] & 8)) && (MFP[MFP_TACR] & 7)) timesub(clock, 0, MFP[MFP_TACR], 2);
+	if (MFP[MFP_TBCR] & 7) timesub(clock, 1, MFP[MFP_TBCR], 7);
+	if (MFP[MFP_TCDCR] & 0x70) timesub(clock, 2, MFP[MFP_TCDCR] >> 4, 10);
+	if (MFP[MFP_TCDCR] & 7) timesub(clock, 3, MFP[MFP_TCDCR], 11);
 }
 
 #else
