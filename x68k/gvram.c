@@ -1427,28 +1427,58 @@ void FASTCALL Grp_DrawLine4h(void)
 #else /* !USE_ASM && !(USE_GAS && __i386__) */
 	WORD *srcp, *destp;
 	DWORD x, y;
-	DWORD i;
-	WORD v;
-	int bits;
 
 	y = GrphScrollY[0] + VLINE;
 	if ((CRTC_Regs[0x29] & 0x1c) == 0x1c)
 		y += VLINE;
 	y &= 0x3ff;
 
-	if ((y & 0x200) == 0x000) {
-		y <<= 10;
-		bits = (GrphScrollX[0] & 0x200) ? 4 : 0;
-	} else {
-		y = (y & 0x1ff) << 10;
-		bits = (GrphScrollX[0] & 0x200) ? 12 : 8;
-	}
+#if 1
+#define expand4h(N1, N2) do {\
+	do *destp++ = GrphPal[*srcp++ >> N1 & 0xf];\
+	while ((intptr_t)srcp & 0x3ff);\
+	if (x < TextDotX) {\
+		srcp -= 0x200;\
+		do *destp++ = GrphPal[*srcp++ >> N2 & 0xf];\
+		while ((intptr_t)srcp & 0x3ff);\
+		if ((x + 0x200) < TextDotX) {\
+			srcp -= 0x200;\
+			do *destp++ = GrphPal[*srcp++ >> N1 & 0xf];\
+			while ((intptr_t)srcp & 0x3ff);\
+		}\
+	}\
+} while (0)
 
 	x = GrphScrollX[0] & 0x1ff;
-	srcp = (WORD *)(GVRAM + y + x * 2);
+	srcp = (WORD *)(GVRAM + ((y & 0x1ff) << 10) + (x << 1));
 	destp = (WORD *)Grp_LineBuf;
 
 	x = ((x & 0x1ff) ^ 0x1ff) + 1;
+
+	if (y & 0x200)
+		if (GrphScrollX[0] & 0x200) expand4h(12, 8);
+		else expand4h(8, 12);
+	else
+		if (GrphScrollX[0] & 0x200) expand4h(4, 0);
+		else expand4h(0, 4);
+#else
+	DWORD i;
+	WORD v;
+	int bits;
+
+	if ((y & 0x200) == 0x000) {
+        y <<= 10;
+        bits = (GrphScrollX[0] & 0x200) ? 4 : 0;
+    } else {
+        y = (y & 0x1ff) << 10;
+        bits = (GrphScrollX[0] & 0x200) ? 12 : 8;
+    }
+    
+    x = GrphScrollX[0] & 0x1ff;
+    srcp = (WORD *)(GVRAM + y + x * 2);
+    destp = (WORD *)Grp_LineBuf;
+    
+    x = ((x & 0x1ff) ^ 0x1ff) + 1;
 
 	for (i = 0; i < TextDotX; ++i) {
 		v = *srcp++;
@@ -1460,6 +1490,7 @@ void FASTCALL Grp_DrawLine4h(void)
 			x = 512;
 		}
 	}
+#endif
 #endif /* !USE_ASM */
 }
 
