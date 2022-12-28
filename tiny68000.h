@@ -1,5 +1,5 @@
 // Tiny68000
-// Copyright 2021 © Yasuo Kuwahara
+// Copyright 2021,2022 © Yasuo Kuwahara
 // MIT License
 
 extern "C" {
@@ -26,6 +26,7 @@ class M68000 {
 	using s64 = int64_t;
 	using u64 = uint64_t;
 	using IntrVecFunc = int (*)(int);
+	static constexpr int MPU_TYPE = 68000;
 	static constexpr int FBUFMAX = 128;
 public:
 	M68000();
@@ -128,9 +129,11 @@ private:
 	template<int OP> void movem(u32 op);
 	template<int A, typename F, typename S, typename U> void op1(u32 op, F f, S s, U u);
 	template<typename F1, typename F2> void logccr(u32 op, F1 func1, F2 func2);
+	template<int D> void muldiv_l(u32 op);
 	template<int W, typename F> void bitop(u32 op, F func);
 	template<int S> void bcd(u32 op);
 	template<int B> void cond(u32 op);
+	void bitfield(u32 op);
 	void sftrot(u32 op);
 	void movep(u32 op);
 	void SetSR(u16 data, bool perm = false);
@@ -157,7 +160,8 @@ private:
 	FlagDecision *fp;
 	u8 *m;
 	u32 a[8], d[8];
-	u32 pc, ssp, usp;
+	u32 cr[16];
+	u32 pc;
 	u16 sr;
 	int intreq;
 	u32 startIO, endIO;

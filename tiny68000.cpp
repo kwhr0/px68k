@@ -1,5 +1,5 @@
 // Tiny68000
-// Copyright 2021 © Yasuo Kuwahara
+// Copyright 2021,2022 © Yasuo Kuwahara
 // MIT License
 
 #include "tiny68000.h"
@@ -9,11 +9,12 @@
 #include <algorithm>
 
 enum {
-	LC, LV, LZ, LN, LX, LI = 8, LS = 13
+	LC, LV, LZ, LN, LX, LI = 8, LM = 12, LS
 };
 
 enum {
-	MC = 1 << LC, MV = 1 << LV, MZ = 1 << LZ, MN = 1 << LN, MX = 1 << LX, MI = 7 << LI, MS = 1 << LS
+	MC = 1 << LC, MV = 1 << LV, MZ = 1 << LZ, MN = 1 << LN, MX = 1 << LX,
+	MI = 7 << LI, MM = 1 << LM, MS = 1 << LS
 };
 
 enum {
@@ -47,6 +48,10 @@ enum {
 #define SP			a[7]
 #define PRIV		if (!(sr & MS)) Trap(8)
 
+enum {
+	CR_USP = 8, CR_VBR, CR_MSP = 11, CR_ISP
+};
+
 static void unimp(const char *s) {
 	fprintf(stderr, "unimplemented: %s\n", s);
 	exit(1);
@@ -67,13 +72,13 @@ M68000::M68000() : m(nullptr), intrVecFunc(nullptr), startIO(0), endIO(0) {
 void M68000::Reset() {
 	memset(d, 0, sizeof(d));
 	memset(a, 0, sizeof(a));
+	memset(cr, 0, sizeof(cr));
 	intreq = 0;
 	stopf = false;
 	SetupFlags(0);
 	sr = MS | MI;
 	a[7] = get4(0);
 	pc = get4(4);
-	ssp = usp = 0;
 }
 
 // RW: 0...address only 1...read 2...write 3...modify
@@ -82,9 +87,29 @@ void M68000::Reset() {
 template<int RW, typename F> M68000::u32 M68000::ea(int modereg, int size, F func) {
 	auto exmode = [&](u32 base) {
 		u16 ext = fetch2();
-		u32 t = (ext & 0x8000 ? a : d)[ext >> 12 & 7];
-		t = (ext & 0x800 ? t : (s16)t) << (ext >> 9 & 3);
-		return t + base + s8(ext & 0xff);
+		auto idx = [&]{
+			u32 t = (ext & 0x8000 ? a : d)[ext >> 12 & 7];
+			return (ext & 0x800 ? t : (s16)t) << (ext >> 9 & 3);
+		};
+		auto disp = [&](int sw)->u32 {
+			switch (sw & 3) {
+				case 2: return fetch2();
+				case 3: return fetch4();
+			}
+			return 0;
+		};
+		u32 t;
+		if (ext & 0x100) { // full extension (68020+)
+			t = ext & 0x80 ? 0 : base; // BS
+			if (ext & 0x40) // IS=1
+				t = ext & 7 ? get4(t + disp(ext >> 4)) + disp(ext) : t + disp(ext >> 4) + disp(ext);
+			else { // IS=0
+				t += disp(ext >> 4);
+				t = (ext & 7 ? ext & 4 ? get4(t) + idx() : get4(t + idx()) : t + idx()) + disp(ext);
+			}
+		}
+		else t = base + idx() + s8(ext & 0xff); // brief extension
+		return t;
 	};
 	u32 adr = 0, data = 0, mode = modereg >> 3 & 7, reg = modereg & 7;
 	switch (mode) {
@@ -147,7 +172,10 @@ template<int MR> void M68000::movem(u32 op) {
 	}
 	else { // reg to mem
 		if ((op & 0x38) == 0x20) {
-			loop(0x001, [&](int n) { stS(adr -= ofs, a[7 - n], size); });
+			loop(0x001, [&](int n) {
+				if constexpr (MPU_TYPE >= 68020) { a[REG0] = adr -= ofs; stS(adr, a[7 - n], size); }
+				else stS(adr -= ofs, a[7 - n], size);
+			});
 			loop(0x100, [&](int n) { stS(adr -= ofs, d[7 - n], size); });
 		}
 		else {
@@ -192,6 +220,54 @@ template<typename F1, typename F2> void M68000::logccr(u32 op, F1 funcl, F2 func
 	}
 }
 
+template<int D> void M68000::muldiv_l(u32 op) {
+	u32 t = fetch2(), f64 = t & 0x400;
+	u32 &dq = d[t >> 12 & 7], &dr = d[t & 7];
+	if constexpr (D) {
+		if (t & 0x800) // divs.l
+			ea<1>(op, 2, [&](s32 s) {
+				if (s) {
+					s64 q = dq;
+					if (f64) q |= (s64)dr << 32;
+					dr = q % s;
+					q /= s;
+					if (q == (s32)q) dq = flogic((s32)q, 2);
+					else fset(VS);
+				}
+				else { fset(C0); Trap(5); }
+			});
+		else // divu.l
+			ea<1>(op, 2, [&](u32 s) {
+				if (s) {
+					u64 q = dq;
+					if (f64) q |= (u64)dr << 32;
+					dr = q % s;
+					q /= s;
+					if (q == (u32)q) dq = flogic((u32)q, 2);
+					else fset(VS);
+				}
+				else { fset(C0); Trap(5); }
+			});
+	}
+	else {
+		if (t & 0x800) // muls.l
+			ea<1>(op, 2, [&](s32 v) {
+				s64 ts = (s32)dq * (s64)v;
+				fmul(dq, v, f64 ? ts >> 32 : (s32)ts, f64 ? 1 : 0);
+				dq = (s32)ts;
+				if (f64) dr = ts >> 32;
+			});
+		else { // mulu.l
+			ea<1>(op, 2, [&](u32 v) {
+				u64 tu = dq * (u64)v;
+				fmul(dq, v, f64 ? tu >> 32 : (u32)tu, f64 ? 2 : 0);
+				dq = (u32)tu;
+				if (f64) dr = tu >> 32;
+			});
+		}
+	}
+}
+
 template<int M, typename F> void M68000::bitop(u32 op, F func) {
 	u32 m;
 	if constexpr ((M & 2) != 0) m = d[REG9];
@@ -200,6 +276,39 @@ template<int M, typename F> void M68000::bitop(u32 op, F func) {
 	int size = op & 0x38 ? 0 : 2;
 	if constexpr (M & 1) { ea<3>(op, size, [&](u32 v) { fbtst(v & m, size); return func(v, m); }); }
 	else ea<1>(op, size, [&](u32 v) { fbtst(v & m, size); });
+}
+
+void M68000::bitfield(u32 op) { // M68000PRM.pdf page 1-29
+	u32 i, adr = 0, t = fetch2(), ofs = t & 0x800 ? d[t >> 6 & 7] : t >> 6 & 0x1f;
+	u32 width = ((t & 0x20 ? d[t & 7] : t) - 1 & 0x1f) + 1, bofs = 0x40 - (ofs & 0x1f) - width;
+	u64 data;
+	if (op & 0x38) {
+		adr = ea<0>(op, 0, []{}) + (ofs >> 3);
+		data = (u64)ld4(adr) << 32 | ld4(adr + 4);
+	}
+	else data = (u64)d[REG0] << 32;
+	auto ext = [&]{ return fbf(u32(data >> bofs & (1LL << width) - 1), width); };
+	auto mask = [&]{ return ((1LL << width) - 1) << bofs; };
+	switch (op & 0x700) {
+		default: ext(); return; // bftst
+		case 0x100: stD(t >> 12 & 7, ext()); return; // bfextu
+		case 0x200: ext(); data ^= mask(); break; // bfchg
+		case 0x300: stD(t >> 12 & 7, s32(ext() << (32 - width)) >> (32 - width)); return; // bfexts
+		case 0x400: ext(); data &= mask(); break; // bfclr
+		case 0x500: // bfffo
+			i = 0;
+			for (u32 d1 = ext(), m1 =  1 << (width - 1); i < width && !(d1 & m1); i++, m1 >>= 1)
+				;
+			d[t >> 12 & 7] = ofs + i;
+			break;
+		case 0x600: ext(); data |= mask(); break; //bfset
+		case 0x700: data = (data & ~mask()) | ((u64)fbf(d[t >> 12 & 7], width) << bofs & mask()); break; // bfins
+	}
+	if (op & 0x38) {
+		st4(adr, data >> 32);
+		st4(adr + 4, (u32)data);
+	}
+	else d[REG0] = data >> 32;
 }
 
 void M68000::sftrot(u32 op) {
@@ -332,7 +441,10 @@ template<int B> void M68000::cond(u32 op) {
 	}
 	else if ((op & 0x38) != 8)
 		if ((op & 0x3f) < 0x3a) ea<2>(op, 0, [&]{ return f() ? 0xff : 0; }); // scc
-		else unimp("TRAPcc");
+		else { // trapcc
+			if (!(op & 4)) pc += (op & 3) + ((op & 3) == 3);
+			if (f()) Trap(7);
+		}
 	else if (!f()) { // dbcc
 		s16 s = d[REG0] - 1;
 		stD(REG0, s, 1);
@@ -343,8 +455,8 @@ template<int B> void M68000::cond(u32 op) {
 
 void M68000::SetSR(u16 data, bool perm) {
 	if (!perm && !(sr & MS) && data & MS) Trap(8);
-	(sr & MS ? ssp : usp) = a[7];
-	a[7] = data & MS ? ssp : usp;
+	cr[sr & MS ? sr & MM ? CR_MSP : CR_ISP : CR_USP] = a[7];
+	a[7] = cr[data & MS ? data & MM ? CR_MSP : CR_ISP : CR_USP];
 	SetupFlags(sr = data);
 }
 
@@ -355,9 +467,16 @@ void M68000::Trap(u32 vector) {
 	}
 	u16 sr0 = (sr & 0xffe0) | ResolvFlags();
 	SetSR(sr0 | MS, true);
+	if constexpr (MPU_TYPE >= 68020) {
+		if (vector >= 5 && vector <= 7) {
+			push4(pc);
+			push2(0x2000 | (vector & 0x3ff));
+		}
+		else push2(vector & 0x3ff);
+	}
 	push4(pc);
 	push2(sr0);
-	pc = get4(vector << 2);
+	pc = get4(cr[CR_VBR] + (vector << 2));
 	if (!pc) {
 		fprintf(stderr, "undefined trap: %d\n", vector);
 		exit(1);
@@ -486,12 +605,16 @@ int M68000::Execute(int n) {
 						ea<3>(op, SIZE6, [&](u32 v) { return fsubx(v, 0, -v - X, SIZE6); }); // negx
 						break;
 					case 0xc0:
+						if constexpr (MPU_TYPE >= 68010) PRIV;
 						ea<2>(op, 1, [&]{ return (sr & 0xffe0) | ResolvFlags(); }); // move from SR
 						break;
-					case 0x200: case 0x240: case 0x280:
-						ea<2>(op, SIZE6, [&]{ return flogic(0, 0); }); // clr
+					case 0x200: case 0x240: case 0x280: // clr
+						if constexpr (MPU_TYPE >= 68010) ea<2>(op, SIZE6, [&]{ return flogic(0, 0); });
+						else ea<3>(op, SIZE6, [&](u32) { return flogic(0, 0); });
 						break;
-					case 0x2c0: unimp("MOVE from CCR"); break;
+					case 0x2c0:
+						ea<2>(op, 1, [&]{ return (sr & 0xe0) | ResolvFlags(); }); // move from CCR
+						break;
 					case 0x400: case 0x440: case 0x480:
 						ea<3>(op, SIZE6, [&](u32 v) { return fsub(v, 0, -v, SIZE6); }); // neg
 						break;
@@ -530,8 +653,12 @@ int M68000::Execute(int n) {
 						if ((op & 0x3f) != 0x3c) ea<3>(op, 0, [&](u32 v) { return flogic(v, 0) | 0x80; }); // tas
 						else Trap(4); // illegal
 						break;
-					case 0xc00: unimp("MUL.L"); break;
-					case 0xc40: unimp("DIV.L"); break;
+					case 0xc00:
+						muldiv_l<0>(op);
+						break;
+					case 0xc40:
+						muldiv_l<1>(op);
+						break;
 					case 0xc80: case 0xcc0:
 						movem<1>(op); // movem <ea>,list
 						break;
@@ -549,10 +676,10 @@ int M68000::Execute(int n) {
 								a[REG0] = pop4();
 								break;
 							case 0x20: // move to usp
-								PRIV; usp = a[REG0];
+								PRIV; cr[CR_USP] = a[REG0];
 								break;
 							case 0x28: // move from usp
-								PRIV; a[REG0] = usp;
+								PRIV; a[REG0] = cr[CR_USP];
 								break;
 							default:
 								switch (op & 0xf) {
@@ -566,8 +693,13 @@ int M68000::Execute(int n) {
 										t = pop2();
 										pc = pop4();
 										SetSR(t);
+										if constexpr (MPU_TYPE >= 68020)
+											if ((pop2() & 0xf000) == 0x2000) SP += 4;
 										break;
-									case 4: unimp("RTD"); break;
+									case 4: // rtd
+										pc = pop4();
+										SP += fetch2();
+										break;
 									case 5: // rts
 										pc = pop4();
 										break;
@@ -578,7 +710,12 @@ int M68000::Execute(int n) {
 										SetupFlags(pop2());
 										pc = pop4();
 										break;
-									case 0xa: case 0xb: unimp("MOVEC"); break;
+									case 0xa: case 0xb: // movec
+										if ((t = fetch2()) >= 8) t -= 0x7f8;
+										if (t >= 16) break;
+										if (op & 1) cr[t] = (t & 0x8000 ? d : a)[t >> 12 & 7];
+										else (t & 0x8000 ? d : a)[t >> 12 & 7] = cr[t];
+										break;
 									default: undef(); break;
 								}
 								break;
@@ -671,7 +808,7 @@ int M68000::Execute(int n) {
 				else op1<1>(op, [&](u32 s, u32 d, int) { return d + s; }, []{}, []{}); // adda
 				break;
 			case 0xe000:
-				(op & 0x8c0) == 0x8c0 ? unimp("BITFIELD") : sftrot(op);
+				(op & 0x8c0) == 0x8c0 ? bitfield(op) : sftrot(op);
 				break;
 			case 0xf000:
 				pc -= 2;
