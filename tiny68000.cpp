@@ -257,14 +257,13 @@ template<int D> void M68000::muldiv_l(u32 op) {
 				dq = (s32)ts;
 				if (f64) dr = ts >> 32;
 			});
-		else { // mulu.l
+		else // mulu.l
 			ea<1>(op, 2, [&](u32 v) {
 				u64 tu = dq * (u64)v;
 				fmul(dq, v, f64 ? tu >> 32 : (u32)tu, f64 ? 2 : 0);
 				dq = (u32)tu;
 				if (f64) dr = tu >> 32;
 			});
-		}
 	}
 }
 
@@ -344,10 +343,7 @@ void M68000::sftrot(u32 op) {
 		case 3: // ror
 			f([&](u32 v, u32 s) { return v >> s | v << (bits - s); });
 			break;
-		case 4: // asl
-			f([&](u32 v, u32 s) { return v << s; });
-			break;
-		case 5: // lsl
+		default: // asl/lsl
 			f([&](u32 v, u32 s) { return v << s; });
 			break;
 		case 6: // roxl
@@ -829,7 +825,7 @@ int M68000::Execute(int n) {
 		if (++tracep >= tracebuf + TRACEMAX) tracep = tracebuf;
 #endif
 #endif
-		clock += 10; // CPI
+		clock += 10; // average 68000 CPI (provisional)
 	} while (!stopf && clock < n);
 	return stopf ? 0 : clock - n;
 }
