@@ -1,5 +1,7 @@
 /*	$Id: mem_wrap.c,v 1.2 2003/12/05 18:07:19 nonaka Exp $	*/
 
+extern "C" {
+
 #include "test.h"
 #include "common.h"
 #include "memory.h"
@@ -27,9 +29,11 @@
 
 #include "fmg_wrap.h"
 
-#ifndef NEWMPU
+#ifdef CURMPU
 #include "../m68000/c68k/c68k.h"
 #endif
+
+} // extern "C"
 
 static void wm_main(DWORD addr, BYTE val);
 static void wm_cnt(DWORD addr, BYTE val);
@@ -179,9 +183,34 @@ dma_writemem24_dword(DWORD addr, DWORD val)
 	wm_main(addr + 3, val & 0xff);
 }
 
+#include "CompareProcess.h"
+#include "tiny68000.h"
+extern M68000 m68000;
+struct CP : CompareProcess {
+#if M68000_TRACE
+	void Stop() { m68000.StopTrace(); }
+#endif
+} cp;
+void setCompare(int f) {
+	cp.setCompare(f);
+}
+extern "C" int getCompare() {
+	return cp.compareMode;
+}
+
+void cpu_writemem24_nolog(DWORD addr, BYTE val) {
+	MemByteAccess = 0;
+	BusErrFlag = 0;
+
+	wm_cnt(addr, val);
+}
+
 void FASTCALL
 cpu_writemem24(DWORD addr, BYTE val)
 {
+#if defined(CURMPU) && defined(NEWMPU)
+	if (cp.WriteStart(addr, val, 0)) return;
+#endif
 #ifdef TESTLOG
 	if (testlog) fprintf(testlog, "%06x=%02x ", addr & 0xffffff, val);
 #endif
@@ -194,6 +223,9 @@ cpu_writemem24(DWORD addr, BYTE val)
 void FASTCALL
 cpu_writemem24_word(DWORD addr, WORD val)
 {
+#if defined(CURMPU) && defined(NEWMPU)
+	if (cp.WriteStart(addr, val, 1)) return;
+#endif
 #ifdef TESTLOG
 	if (testlog) fprintf(testlog, "%06x=%04x ", addr & 0xffffff, val);
 #endif
@@ -334,9 +366,15 @@ dma_readmem24_dword(DWORD addr)
 BYTE FASTCALL
 cpu_readmem24(DWORD addr)
 {
-	BYTE v;
+	WORD v;//BYTE v;
+#if defined(CURMPU) && defined(NEWMPU)
+	if (cp.ReadStart(addr, v, 0)) return v;
+#endif
 
 	v = rm_main(addr);
+#if defined(CURMPU) && defined(NEWMPU)
+	cp.ReadEnd(v);
+#endif
 	return v;
 }
 
@@ -344,10 +382,16 @@ WORD FASTCALL
 cpu_readmem24_word(DWORD addr)
 {
 	WORD v;
+#if defined(CURMPU) && defined(NEWMPU)
+	if (cp.ReadStart(addr, v, 1)) return v;
+#endif
 	BusErrFlag = 0;
 
 	v = rm_main(addr++) << 8;
 	v |= rm_main(addr);
+#if defined(CURMPU) && defined(NEWMPU)
+	cp.ReadEnd(v);
+#endif
 	return v;
 }
 
@@ -491,7 +535,7 @@ cpu_setOPbase24(DWORD addr)
  * Memory misc
  */
 void Memory_Init(void)
-{
+{ // どちらも0xff0010になるので、定義されている方でOK
 #ifdef NEWMPU
 	cpu_setOPbase24(newgetpc());
 #else

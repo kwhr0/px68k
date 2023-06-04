@@ -5,11 +5,11 @@
 #include "test.h"
 #include "common.h"
 #include "irqh.h"
-#ifndef NEWMPU
+#ifdef CURMPU
 #include "../m68000/c68k/c68k.h"
 #endif
 
-	BYTE	IRQH_IRQ[8];
+	BYTE	IRQH_IRQ[8], IRQH_IRQ_copy[8];
 	void	*IRQH_CallBack[8];
 
 // -----------------------------------------------------------------------
@@ -57,10 +57,11 @@ void IRQH_Int(BYTE irq, void* handler)
 	{
 	    if (IRQH_IRQ[i])
 	    {
+#ifdef CURMPU
+			C68k_Set_IRQ(&C68K, i);
+#endif
 #ifdef NEWMPU
 			newirq(i);
-#else
-			C68k_Set_IRQ(&C68K, i);
 #endif
 		return;
 	    }
@@ -69,23 +70,42 @@ void IRQH_Int(BYTE irq, void* handler)
 
 int my_irqh_callback(int level)
 {
-    int i;
-    INT_CALLBACK func = IRQH_CallBack[level&7];
-    int vect = (func)(level&7);
-//    printf("irq vect = %x line = %d\n", vect, level);
-
-    for (i=7; i>0; i--)
-    {
-	if (IRQH_IRQ[i])
-	{
-#ifdef NEWMPU
-		newirq(i);
-#else
-	    C68k_Set_IRQ(&C68K, i);
-#endif
-	    break;
+    int i, vect;
+	INT_CALLBACK func = IRQH_CallBack[level&7];
+#if defined(CURMPU) && defined(NEWMPU)
+	static int vect_copy;
+	extern int getCompare(void);
+	if (!getCompare()) {
+		vect_copy = vect = (func)(level&7);
+		for (i = 0; i < 8; i++) IRQH_IRQ_copy[i] = IRQH_IRQ[i];
 	}
-    }
-
+	else vect = vect_copy;
+	if (!getCompare()) {
+		for (i=7; i>0; i--)
+			if (IRQH_IRQ[i]) {
+				C68k_Set_IRQ(&C68K, i);
+				break;
+			}
+	}
+	else {
+		for (i=7; i>0; i--)
+			if (IRQH_IRQ_copy[i]) {
+				newirq(i);
+				break;
+			}
+	}
+#else
+	vect = (func)(level&7);
+	for (i=7; i>0; i--)
+		if (IRQH_IRQ[i]) {
+#ifdef CURMPU
+			C68k_Set_IRQ(&C68K, i);
+#endif
+#ifdef NEWMPU
+			newirq(i);
+#endif
+			break;
+		}
+#endif
     return vect;
 }

@@ -1,11 +1,9 @@
 #include "tiny68000.h"
 #include "test.h"
 
-#ifdef TESTLOG
-#define LOOP		10000
+#if defined(TESTLOG) || defined(CURMPU) && defined(NEWMPU)
 #define STEP		1
 #else
-#define LOOP		0
 #define STEP		n
 #endif
 
@@ -33,7 +31,7 @@ extern "C" {
 #ifdef USE_OGLES11
 #include <SDL_opengles.h>
 #endif
-#ifndef NEWMPU
+#ifdef CURMPU
 #include "../m68000/m68000.h"
 #endif
 #include "common.h"
@@ -270,7 +268,8 @@ WinX68k_Reset(void)
 	(int &)MEM[0] = (IPL[0x30003]<<24)|(IPL[0x30002]<<16)|(IPL[0x30001]<<8)|IPL[0x30000];
 	(int &)MEM[4] = (IPL[0x30007]<<24)|(IPL[0x30006]<<16)|(IPL[0x30005]<<8)|IPL[0x30004];
 	m68000.Reset();
-#else
+#endif
+#ifdef CURMPU
 	C68k_Reset(&C68K);
 	C68k_Set_AReg(&C68K, 7, (IPL[0x30001]<<24)|(IPL[0x30000]<<16)|(IPL[0x30003]<<8)|IPL[0x30002]);
 	C68k_Set_PC(&C68K, (IPL[0x30005]<<24)|(IPL[0x30004]<<16)|(IPL[0x30007]<<8)|IPL[0x30006]);
@@ -326,12 +325,13 @@ WinX68k_Init(void)
 #ifdef NEWMPU
 		m68000.SetMemoryPtr(MEM);
 		m68000.SetIntrVecFunc(my_irqh_callback);
-#ifdef TESTLOG
+#if defined(TESTLOG) || defined(CURMPU) && defined(NEWMPU)
 		m68000.SetIORange32(0, 0x1000000);
 #else
 		m68000.SetIORange32(0xc00000, 0x1000000);
 #endif
-#else
+#endif
+#ifdef CURMPU
 	  	m68000_init();
 #endif
 #ifdef TESTLOG
@@ -425,12 +425,20 @@ void WinX68k_Exec(void)
 		}
 
 		{
+			extern void setCompare(int f);
+#ifdef CURMPU
+			if (testlog) fprintf(testlog, "\n%06x ", C68K.PC-C68K.BasePC);
+#ifdef NEWMPU
+			setCompare(false);
+#endif
+			C68k_Exec(&C68K, STEP);
+#endif
 #ifdef NEWMPU
 			if (testlog) fprintf(testlog, "\n%06x ", newgetpc());
+#ifdef CURMPU
+			setCompare(true);
+#endif
 			m68000.Execute(STEP);
-#else
-			if (testlog) fprintf(testlog, "\n%06x ", C68K.PC-C68K.BasePC);
-			C68k_Exec(&C68K, STEP);
 #endif
 			m = (n-m68000_ICountBk);			// 経過クロック数
 			ClkUsed += m*10;
@@ -778,7 +786,7 @@ int main(int argc, char *argv[])
 
 	//SDL_StartTextInput();
 	GRAB(SDL_TRUE);
-	for (int i = 0; i <= LOOP; i += LOOP > 0) {
+	while (1) {
 		// OPM_RomeoOut(Config.BufferSize * 5);
 		if (menu_mode == menu_out
 		    && (Config.NoWaitMode || Timer_GetCount())) {
@@ -1027,7 +1035,7 @@ int main(int argc, char *argv[])
 
 	}
 end_loop:
-	Memory_WriteB(0xe8e00d, 0x31);	// SRAM書き込み許可
+	cpu_writemem24_nolog(0xe8e00d, 0x31);	// SRAM書き込み許可
 	Memory_WriteD(0xed0040, Memory_ReadD(0xed0040)+1); // 積算稼働時間(min.)
 	Memory_WriteD(0xed0044, Memory_ReadD(0xed0044)+1); // 積算起動回数
 

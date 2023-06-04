@@ -48,5 +48,6 @@ void FASTCALL dma_writemem24_dword(DWORD adr, DWORD data);
 //void FASTCALL cpu_setOPbase24(DWORD adr);
 
 void FASTCALL Memory_SetSCSIMode(void);
+void cpu_writemem24_nolog(DWORD addr, BYTE val);
 
 #endif

@@ -42,7 +42,7 @@
 		E4F332F02759D2A800B5EA4C /* gvram.c in Sources */ = {isa = PBXBuildFile; fileRef = E445F276275467E600315C49 /* gvram.c */; };
 		E4F332F12759D2B100B5EA4C /* ioc.c in Sources */ = {isa = PBXBuildFile; fileRef = E445F241275467E200315C49 /* ioc.c */; };
 		E4F332F22759D2BC00B5EA4C /* irqh.c in Sources */ = {isa = PBXBuildFile; fileRef = E445F24A275467E200315C49 /* irqh.c */; };
-		E4F332F42759D35100B5EA4C /* mem_wrap.c in Sources */ = {isa = PBXBuildFile; fileRef = E445F26B275467E500315C49 /* mem_wrap.c */; };
+		E4F332F42759D35100B5EA4C /* mem_wrap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E445F26B275467E500315C49 /* mem_wrap.cpp */; };
 		E4F332F52759D36100B5EA4C /* mercury.c in Sources */ = {isa = PBXBuildFile; fileRef = E445F275275467E600315C49 /* mercury.c */; };
 		E4F332F62759D37400B5EA4C /* mfp.c in Sources */ = {isa = PBXBuildFile; fileRef = E445F263275467E400315C49 /* mfp.c */; };
 		E4F332F72759D37E00B5EA4C /* midi.c in Sources */ = {isa = PBXBuildFile; fileRef = E445F247275467E200315C49 /* midi.c */; };
@@ -155,7 +155,7 @@
 		E445F268275467E500315C49 /* mfp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mfp.h; sourceTree = "<group>"; };
 		E445F269275467E500315C49 /* gvram.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gvram.h; sourceTree = "<group>"; };
 		E445F26A275467E500315C49 /* disk_d88.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = disk_d88.c; sourceTree = "<group>"; };
-		E445F26B275467E500315C49 /* mem_wrap.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mem_wrap.c; sourceTree = "<group>"; };
+		E445F26B275467E500315C49 /* mem_wrap.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = mem_wrap.cpp; sourceTree = "<group>"; };
 		E445F26C275467E500315C49 /* tvram.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = tvram.c; sourceTree = "<group>"; };
 		E445F26D275467E500315C49 /* sasi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sasi.c; sourceTree = "<group>"; };
 		E445F26E275467E600315C49 /* sysport.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sysport.c; sourceTree = "<group>"; };
@@ -167,6 +167,7 @@
 		E445F275275467E600315C49 /* mercury.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mercury.c; sourceTree = "<group>"; };
 		E445F276275467E600315C49 /* gvram.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = gvram.c; sourceTree = "<group>"; };
 		E445F277275467E700315C49 /* fdc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fdc.h; sourceTree = "<group>"; };
+		E45B751E2A2B45C300DFB4EC /* CompareProcess.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CompareProcess.h; sourceTree = "<group>"; };
 		E496AA9127618BC700DC6F29 /* misc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = misc.h; sourceTree = "<group>"; };
 		E496AA9227618BC700DC6F29 /* fmg_wrap.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fmg_wrap.cpp; sourceTree = "<group>"; };
 		E496AA9427618BC700DC6F29 /* opm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = opm.cpp; sourceTree = "<group>"; };
@@ -232,6 +233,7 @@
 			children = (
 				E4EB9E172761893C00847900 /* fmgen */,
 				E421B7DD275DD29500A1DEC8 /* test.h */,
+				E45B751E2A2B45C300DFB4EC /* CompareProcess.h */,
 				E43E4754275741A60093B8D9 /* tiny68000.h */,
 				E43E4755275741A60093B8D9 /* tiny68000.cpp */,
 				E445F1FA2754666A00315C49 /* win32api */,
@@ -316,7 +318,7 @@
 				E445F241275467E200315C49 /* ioc.c */,
 				E445F271275467E600315C49 /* irqh.h */,
 				E445F24A275467E200315C49 /* irqh.c */,
-				E445F26B275467E500315C49 /* mem_wrap.c */,
+				E445F26B275467E500315C49 /* mem_wrap.cpp */,
 				E445F26F275467E600315C49 /* memory.h */,
 				E445F265275467E500315C49 /* mercury.h */,
 				E445F275275467E600315C49 /* mercury.c */,
@@ -482,7 +484,7 @@
 				E4F332ED2759D28D00B5EA4C /* dmac.c in Sources */,
 				E445F230275466DB00315C49 /* keytbl.inc in Sources */,
 				E4F332D32759CF2800B5EA4C /* dswin.c in Sources */,
-				E4F332F42759D35100B5EA4C /* mem_wrap.c in Sources */,
+				E4F332F42759D35100B5EA4C /* mem_wrap.cpp in Sources */,
 				E4F332EF2759D29F00B5EA4C /* fdd.c in Sources */,
 				E496AAA627618BC700DC6F29 /* opm.cpp in Sources */,
 				E4F332D22759CF2000B5EA4C /* common.c in Sources */,
