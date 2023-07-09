@@ -1,4 +1,4 @@
-#include "tiny68000.h"
+#include "Tiny68020.h"
 #include "test.h"
 
 #if defined(TESTLOG) || defined(CURMPU) && defined(NEWMPU)
@@ -15,12 +15,12 @@
 #define GRAB(f)
 #endif
 
-M68000 m68000;
+Tiny68020 tiny68020;
 void newirq(int level) {
-	m68000.IRQ(level);
+	tiny68020.IRQ(level);
 }
 unsigned newgetpc(void) {
-	return m68000.GetPC();
+	return tiny68020.GetPC();
 }
 
 #ifdef  __cplusplus
@@ -267,7 +267,7 @@ WinX68k_Reset(void)
 #ifdef NEWMPU
 	(int &)MEM[0] = (IPL[0x30003]<<24)|(IPL[0x30002]<<16)|(IPL[0x30001]<<8)|IPL[0x30000];
 	(int &)MEM[4] = (IPL[0x30007]<<24)|(IPL[0x30006]<<16)|(IPL[0x30005]<<8)|IPL[0x30004];
-	m68000.Reset();
+	tiny68020.Reset();
 #endif
 #ifdef CURMPU
 	C68k_Reset(&C68K);
@@ -323,12 +323,12 @@ WinX68k_Init(void)
 
 	if (MEM && FONT && IPL) {
 #ifdef NEWMPU
-		m68000.SetMemoryPtr(MEM);
-		m68000.SetIntrVecFunc(my_irqh_callback);
+		tiny68020.SetMemoryPtr(MEM);
+		tiny68020.SetIntrVecFunc(my_irqh_callback);
 #if defined(TESTLOG) || defined(CURMPU) && defined(NEWMPU)
-		m68000.SetIORange32(0, 0x1000000);
+		tiny68020.SetIORange32(0, 0x1000000);
 #else
-		m68000.SetIORange32(0xc00000, 0x1000000);
+		tiny68020.SetIORange32(0xc00000, 0x1000000);
 #endif
 #endif
 #ifdef CURMPU
@@ -438,7 +438,7 @@ void WinX68k_Exec(void)
 #ifdef CURMPU
 			setCompare(true);
 #endif
-			m68000.Execute(STEP);
+			tiny68020.Execute(STEP);
 #endif
 			m = (n-m68000_ICountBk);			// 経過クロック数
 			ClkUsed += m*10;

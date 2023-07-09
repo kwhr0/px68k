@@ -1,25 +1,25 @@
-// Tiny68000
+// Tiny68020
 // Copyright 2021-2023 © Yasuo Kuwahara
 // MIT License
 
 extern "C" {
 #include "memory.h"		// px68k
 }
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <cstdint>
 #include <algorithm>
 
-#define M68000_TRACE		0
+#define TINY68020_TRACE		0
 
-#if M68000_TRACE
-#define M68000_TRACE_LOG(adr, data, type) \
+#if TINY68020_TRACE
+#define TINY68020_TRACE_LOG(adr, data, type) \
 	if (tracep->index < ACSMAX) tracep->acs[tracep->index++] = { adr, data, type }
 #else
-#define M68000_TRACE_LOG(adr, data, type)
+#define TINY68020_TRACE_LOG(adr, data, type)
 #endif
 
-class M68000 {
+class Tiny68020 {
 	friend class Insn;
 	using s8 = int8_t;
 	using u8 = uint8_t;
@@ -33,11 +33,11 @@ class M68000 {
 	static constexpr int MPU_TYPE = 68000;
 	static constexpr int FBUFMAX = 128;
 	enum {
-		LC, LV, LZ, LN, LX, LI = 8, LM = 12, LS
+		LC, LV, LZ, LN, LX, LI = 8, LM = 12, LS, LT = 15
 	};
 	enum {
 		MC = 1 << LC, MV = 1 << LV, MZ = 1 << LZ, MN = 1 << LN, MX = 1 << LX,
-		MI = 7 << LI, MM = 1 << LM, MS = 1 << LS
+		MI = 7 << LI, MM = 1 << LM, MS = 1 << LS, MT = 1 << LT
 	};
 	enum {
 		FB = 1, F0, FS, FSX, FADD, FSUB, FSUBX, FMUL, FBCD, FBF,
@@ -56,15 +56,16 @@ class M68000 {
 		CR_USP = 8, CR_VBR, CR_MSP = 11, CR_ISP
 	};
 public:
-	M68000();
+	Tiny68020();
 	void Reset();
 	void SetMemoryPtr(u8 *p) { m = p; }
 	void SetIORange32(u32 start, u32 end) { startIO = start; endIO = end; }
 	int Execute(int n);
 	u32 GetPC() const { return pc; }
+	void SetPC(u32 v) { pc = v; }
 	void IRQ(int level) { intreq = level & 7; }
 	void SetIntrVecFunc(IntrVecFunc func) { intrVecFunc = func; }
-#if M68000_TRACE
+#if TINY68020_TRACE
 	void StopTrace();
 #endif
 private:
@@ -72,23 +73,23 @@ private:
 		if constexpr (S == 0) d[n] = (d[n] & 0xffffff00) | (data & 0xff);
 		else if constexpr (S == 1) d[n] = (d[n] & 0xffff0000) | (data & 0xffff);
 		else d[n] = data;
-		M68000_TRACE_LOG(n, d[n], acsStoreD);
+		TINY68020_TRACE_LOG(n, d[n], acsStoreD);
 	}
 	void stA(u32 n, u32 data) {
 		a[n] = data;
-		M68000_TRACE_LOG(n, a[n], acsStoreA);
+		TINY68020_TRACE_LOG(n, a[n], acsStoreA);
 	}
 	// customized access for px68k; byte swapped within a word
 	u32 ld1(u32 adr) {
 		adr &= 0xffffff;
 		u32 data = adr >= startIO && adr < endIO ? Memory_ReadB(adr) : m[adr ^ 1];
-		M68000_TRACE_LOG(adr, data, acsLoad8);
+		TINY68020_TRACE_LOG(adr, data, acsLoad8);
 		return data;
 	}
 	u32 ld2(u32 adr) {
 		adr &= 0xffffff;
 		u32 data = adr >= startIO && adr < endIO ? Memory_ReadW(adr) : (u16 &)m[adr];
-		M68000_TRACE_LOG(adr, data, acsLoad16);
+		TINY68020_TRACE_LOG(adr, data, acsLoad16);
 		return data;
 	}
 	u32 ld4(u32 adr) {
@@ -99,20 +100,20 @@ private:
 			data |= Memory_ReadW(adr + 2);
 		}
 		else data = (u16 &)m[adr] << 16 | (u16 &)m[adr + 2];
-		M68000_TRACE_LOG(adr, data, acsLoad32);
+		TINY68020_TRACE_LOG(adr, data, acsLoad32);
 		return data;
 	}
 	void st1(u32 adr, u8 data) {
 		adr &= 0xffffff;
 		if (adr >= startIO && adr < endIO) Memory_WriteB(adr, data);
 		else m[adr ^ 1] = data;
-		M68000_TRACE_LOG(adr, data, acsStore8);
+		TINY68020_TRACE_LOG(adr, data, acsStore8);
 	}
 	void st2(u32 adr, u16 data) {
 		adr &= 0xffffff;
 		if (adr >= startIO && adr < endIO) Memory_WriteW(adr, data);
 		else (u16 &)m[adr] = data;
-		M68000_TRACE_LOG(adr, data, acsStore16);
+		TINY68020_TRACE_LOG(adr, data, acsStore16);
 	}
 	void st4(u32 adr, u32 data) {
 		adr &= 0xffffff;
@@ -124,9 +125,9 @@ private:
 			(u16 &)m[adr] = data >> 16;
 			(u16 &)m[adr + 2] = data;
 		}
-		M68000_TRACE_LOG(adr, data, acsStore32);
+		TINY68020_TRACE_LOG(adr, data, acsStore32);
 	}
-#if M68000_TRACE
+#if TINY68020_TRACE
 	u32 get4(u32 p) { return ld4(p); }
 #else
 	u32 get4(u32 p) { return (u16 &)m[p] << 16 | (u16 &)m[p + 2]; }
@@ -154,7 +155,7 @@ private:
 	}
 	template<int RW, int M, int S, typename F> u32 ea(int reg, F func);
 	void SetSR(u16 data, bool perm = false);
-	void Trap(u32 vector);
+	void Trap(u32 vector, u32 param = 0);
 	template<int C> int cond();
 	int ResolvC();
 	int ResolvV();
@@ -187,14 +188,13 @@ private:
 	FlagDecision *fp;
 	u8 *m;
 	u32 a[8], d[8];
-	u32 cr[16];
-	u32 pc;
 	u16 sr;
-	int intreq;
+	u32 cr[16];
+	u32 pc, trace_pc;
+	int intreq, trace_flag;
 	u32 startIO, endIO;
-	bool stopf;
 	IntrVecFunc intrVecFunc;
-#if M68000_TRACE
+#if TINY68020_TRACE
 	static constexpr int TRACEMAX = 10000;
 	static constexpr int ACSMAX = 32;
 	enum {
@@ -242,15 +242,15 @@ private:
 	void movep(u16 op);
 	void movec(u16 op);
 	template<int M> void move_ccr_ea(u16 op) { // move ccr,<ea>
-		ea<2, M, 1>(op, [&]{ return (sr & 0xe0) | ResolvFlags(); });
+		ea<2, M, 1>(op, [&]{ return ResolvFlags(); });
 	}
 	template<int M> void move_ea_ccr(u16 op) { // move <ea>,ccr
-		ea<1, M, 1>(op, [&](u32 v) { sr = (sr & 0xff00) | (v & 0xff); SetupFlags(v); });
+		ea<1, M, 1>(op, [&](u32 v) { sr = (sr & 0xff00) | (v & 0x1f); SetupFlags(v); });
 	}
 	template<int M> void move_sr_ea(u16 op) { // move sr,<ea>
 		if constexpr (MPU_TYPE >= 68010)
 			if (!(sr & MS)) Trap(8);
-		ea<2, M, 1>(op, [&]{ return (sr & 0xffe0) | ResolvFlags(); });
+		ea<2, M, 1>(op, [&]{ return (sr & 0xff00) | ResolvFlags(); });
 	}
 	template<int M> void move_ea_sr(u16 op) { // move <ea>,sr
 		ea<1, M, 1>(op, [&](u32 v) { SetSR(v); });
@@ -338,9 +338,9 @@ private:
 		u32 t = getImm<S>(); ea<1, M, S>(op, [&](u32 v) { fcmp(t, v, v - t, S); });
 	}
 	template<int S> void cmpm(u16 op) { // cmpm (Ay)+,(Ax)+
-		u32 s = ld<S>(a[R0]), d = ld<S>(a[R9]);
+		u32 s = ld<S>(a[R0]); a[R0] += 1 << S;
+		u32 d = ld<S>(a[R9]); a[R9] += 1 << S;
 		fcmp(s, d, d - s, S);
-		a[R0] += 1 << S; a[R9] += 1 << S;
 	}
 	template<int M, int S> void neg(u16 op) { // neg <ea>
 		ea<3, M, S>(op, [&](u32 v) { return fsub(v, 0, -v, S); });
@@ -392,17 +392,17 @@ private:
 		ea<3, M, 0>(op, [&](u32 v) { return flogic(v, 0) | 0x80; });
 	}
 	void andi_ccr(u16) { // andi #<data>,ccr
-		SetupFlags(sr = (sr & 0xff00) | ((((sr & 0xe0) | ResolvFlags()) & fetch2()) & 0xff));
+		SetupFlags(sr = (sr & 0xff00) | ((ResolvFlags() & fetch2()) & 0xff));
 	}
 	void  ori_ccr(u16) { //  ori #<data>,ccr
-		SetupFlags(sr = (sr & 0xff00) | ((((sr & 0xe0) | ResolvFlags()) | fetch2()) & 0xff));
+		SetupFlags(sr = (sr & 0xff00) | ((ResolvFlags() | fetch2()) & 0xff));
 	}
 	void eori_ccr(u16) { // eori #<data>,ccr
-		SetupFlags(sr = (sr & 0xff00) | ((((sr & 0xe0) | ResolvFlags()) ^ fetch2()) & 0xff));
+		SetupFlags(sr = (sr & 0xff00) | ((ResolvFlags() ^ fetch2()) & 0xff));
 	}
-	void andi_sr(u16) { SetSR(((sr & 0xffe0) | ResolvFlags()) & fetch2()); } // andi #<data>,sr
-	void  ori_sr(u16) { SetSR(((sr & 0xffe0) | ResolvFlags()) | fetch2()); } //  ori #<data>,sr
-	void eori_sr(u16) { SetSR(((sr & 0xffe0) | ResolvFlags()) ^ fetch2()); } // eori #<data>,sr
+	void andi_sr(u16) { SetSR(((sr & 0xff00) | ResolvFlags()) & fetch2()); } // andi #<data>,sr
+	void  ori_sr(u16) { SetSR(((sr & 0xff00) | ResolvFlags()) | fetch2()); } //  ori #<data>,sr
+	void eori_sr(u16) { SetSR(((sr & 0xff00) | ResolvFlags()) ^ fetch2()); } // eori #<data>,sr
 	template<int W, int M, typename F> void bitop(u16 op, F func);
 	template<int M> void btst(u16 op) { // btst Dn,<ea>
 		bitop<2, M>(op, []{});
@@ -456,7 +456,7 @@ private:
 	void trapv(u16) { if (ResolvV()) Trap(7); }
 	void rts(u16) { pc = pop4(); }
 	void rte(u16);
-	void rtd(u16) { pc = pop4(); a[7] += fetch2(); } // rtd #<displacement>
+	void rtd(u16) { u32 t = pop4(); a[7] += fetch2(); pc = t; } // rtd #<displacement>
 	void rtr(u16) { SetupFlags(pop2()); pc = pop4(); }
 	void exg_dd(u16 op) { std::swap(d[R9], d[R0]); } // exg Dx,Dy
 	void exg_aa(u16 op) { std::swap(a[R9], a[R0]); } // exg Ax,Ay
@@ -480,11 +480,8 @@ private:
 	void a_line(u16) { pc -= 2; Trap(10); }
 	void f_line(u16) { pc -= 2; Trap(11); } // CINV,cp*,CPUSH,FPinst,MOVE16
 	void nop(u16) {}
-	void stop(u16) { // stop #<data>
-		if (!(sr & MS)) Trap(8);
-		SetSR(fetch2()); stopf = true;
-	}
+	template <int M, int S> void cas(u16 op);
 	void bkpt(u16) { fprintf(stderr, "BKPT\n"); exit(1); }
 	void x00c0(u16) { fprintf(stderr, "CMP2/CHK2/CALLM/RETM\n"); exit(1); }
-	void x08c0(u16) { fprintf(stderr, "CAS/CAS2/MOVES\n"); exit(1); }
+	void x08c0(u16) { fprintf(stderr, "CAS2/MOVES\n"); exit(1); }
 };

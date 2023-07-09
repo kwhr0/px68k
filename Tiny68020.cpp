@@ -1,51 +1,51 @@
-// Tiny68000
+// Tiny68020
 // Copyright 2021-2023 © Yasuo Kuwahara
 // MIT License
 
-#include "tiny68000.h"
+#include "Tiny68020.h"
 #include <cstring>
 
-#define P(x)			(cnv.pmf = &M68000::x, cnv.p)
-#define PI(x, i)		(cnv.pmf = &M68000::x<i>, cnv.p)
-#define PIS(x, i, s)	(cnv.pmf = &M68000::x<i, s>, cnv.p)
-#define PM(i, j, s)		(cnv.pmf = &M68000::move_ea_ea<i, j, s>, cnv.p)
+#define P(x)			(cnv.pmf = &Tiny68020::x, cnv.p)
+#define PI(x, i)		(cnv.pmf = &Tiny68020::x<i>, cnv.p)
+#define PIS(x, i, s)	(cnv.pmf = &Tiny68020::x<i, s>, cnv.p)
+#define PM(i, j, s)		(cnv.pmf = &Tiny68020::move_ea_ea<i, j, s>, cnv.p)
 
 #define MODE(op, mask, x) {\
-add(op | 0x00, mask | 0x38, PI(x, 0));\
-add(op | 0x08, mask | 0x38, PI(x, 1));\
-add(op | 0x10, mask | 0x38, PI(x, 2));\
-add(op | 0x18, mask | 0x38, PI(x, 3));\
-add(op | 0x20, mask | 0x38, PI(x, 4));\
-add(op | 0x28, mask | 0x38, PI(x, 5));\
-add(op | 0x30, mask | 0x38, PI(x, 6));\
-add(op | 0x38, mask | 0x3f, PI(x, 8));\
-add(op | 0x39, mask | 0x3f, PI(x, 9));\
-add(op | 0x3a, mask | 0x3f, PI(x, 10));\
-add(op | 0x3b, mask | 0x3f, PI(x, 11));\
-add(op | 0x3c, mask | 0x3f, PI(x, 12));\
-add(op | 0x1f, mask | 0x3f, PI(x, 13));\
-add(op | 0x27, mask | 0x3f, PI(x, 14));\
+a(op | 0x00, mask | 0x38, PI(x, 0));\
+a(op | 0x08, mask | 0x38, PI(x, 1));\
+a(op | 0x10, mask | 0x38, PI(x, 2));\
+a(op | 0x18, mask | 0x38, PI(x, 3));\
+a(op | 0x20, mask | 0x38, PI(x, 4));\
+a(op | 0x28, mask | 0x38, PI(x, 5));\
+a(op | 0x30, mask | 0x38, PI(x, 6));\
+a(op | 0x38, mask | 0x3f, PI(x, 8));\
+a(op | 0x39, mask | 0x3f, PI(x, 9));\
+a(op | 0x3a, mask | 0x3f, PI(x, 10));\
+a(op | 0x3b, mask | 0x3f, PI(x, 11));\
+a(op | 0x3c, mask | 0x3f, PI(x, 12));\
+a(op | 0x1f, mask | 0x3f, PI(x, 13));\
+a(op | 0x27, mask | 0x3f, PI(x, 14));\
 }
 #define MODES(op, mask, x, s) {\
-add(op | 0x00, mask | 0x38, PIS(x, 0, s));\
-add(op | 0x08, mask | 0x38, PIS(x, 1, s));\
-add(op | 0x10, mask | 0x38, PIS(x, 2, s));\
-add(op | 0x18, mask | 0x38, PIS(x, 3, s));\
-add(op | 0x20, mask | 0x38, PIS(x, 4, s));\
-add(op | 0x28, mask | 0x38, PIS(x, 5, s));\
-add(op | 0x30, mask | 0x38, PIS(x, 6, s));\
-add(op | 0x38, mask | 0x3f, PIS(x, 8, s));\
-add(op | 0x39, mask | 0x3f, PIS(x, 9, s));\
-add(op | 0x3a, mask | 0x3f, PIS(x, 10, s));\
-add(op | 0x3b, mask | 0x3f, PIS(x, 11, s));\
-add(op | 0x3c, mask | 0x3f, PIS(x, 12, s));\
-add(op | 0x1f, mask | 0x3f, PIS(x, 13, s));\
-add(op | 0x27, mask | 0x3f, PIS(x, 14, s));\
+a(op | 0x00, mask | 0x38, PIS(x, 0, s));\
+a(op | 0x08, mask | 0x38, PIS(x, 1, s));\
+a(op | 0x10, mask | 0x38, PIS(x, 2, s));\
+a(op | 0x18, mask | 0x38, PIS(x, 3, s));\
+a(op | 0x20, mask | 0x38, PIS(x, 4, s));\
+a(op | 0x28, mask | 0x38, PIS(x, 5, s));\
+a(op | 0x30, mask | 0x38, PIS(x, 6, s));\
+a(op | 0x38, mask | 0x3f, PIS(x, 8, s));\
+a(op | 0x39, mask | 0x3f, PIS(x, 9, s));\
+a(op | 0x3a, mask | 0x3f, PIS(x, 10, s));\
+a(op | 0x3b, mask | 0x3f, PIS(x, 11, s));\
+a(op | 0x3c, mask | 0x3f, PIS(x, 12, s));\
+a(op | 0x1f, mask | 0x3f, PIS(x, 13, s));\
+a(op | 0x27, mask | 0x3f, PIS(x, 14, s));\
 }
 #define S3(op, mask, x) {\
-add(op | 0x00, mask, PI(x, 0));\
-add(op | 0x40, mask, PI(x, 1));\
-add(op | 0x80, mask, PI(x, 2));\
+a(op | 0x00, mask, PI(x, 0));\
+a(op | 0x40, mask, PI(x, 1));\
+a(op | 0x80, mask, PI(x, 2));\
 }
 #define IS3(op, mask, x) {\
 MODES(op | 0x00, mask, x, 0);\
@@ -53,20 +53,20 @@ MODES(op | 0x40, mask, x, 1);\
 MODES(op | 0x80, mask, x, 2);\
 }
 #define ME(op, mask, i, s) {\
-add(op | 0x00, mask | 0x38, PM(0, i, s));\
-add(op | 0x08, mask | 0x38, PM(1, i, s));\
-add(op | 0x10, mask | 0x38, PM(2, i, s));\
-add(op | 0x18, mask | 0x38, PM(3, i, s));\
-add(op | 0x20, mask | 0x38, PM(4, i, s));\
-add(op | 0x28, mask | 0x38, PM(5, i, s));\
-add(op | 0x30, mask | 0x38, PM(6, i, s));\
-add(op | 0x38, mask | 0x3f, PM(8, i, s));\
-add(op | 0x39, mask | 0x3f, PM(9, i, s));\
-add(op | 0x3a, mask | 0x3f, PM(10, i, s));\
-add(op | 0x3b, mask | 0x3f, PM(11, i, s));\
-add(op | 0x3c, mask | 0x3f, PM(12, i, s));\
-add(op | 0x1f, mask | 0x3f, PM(13, i, s));\
-add(op | 0x27, mask | 0x3f, PM(14, i, s));\
+a(op | 0x00, mask | 0x38, PM(0, i, s));\
+a(op | 0x08, mask | 0x38, PM(1, i, s));\
+a(op | 0x10, mask | 0x38, PM(2, i, s));\
+a(op | 0x18, mask | 0x38, PM(3, i, s));\
+a(op | 0x20, mask | 0x38, PM(4, i, s));\
+a(op | 0x28, mask | 0x38, PM(5, i, s));\
+a(op | 0x30, mask | 0x38, PM(6, i, s));\
+a(op | 0x38, mask | 0x3f, PM(8, i, s));\
+a(op | 0x39, mask | 0x3f, PM(9, i, s));\
+a(op | 0x3a, mask | 0x3f, PM(10, i, s));\
+a(op | 0x3b, mask | 0x3f, PM(11, i, s));\
+a(op | 0x3c, mask | 0x3f, PM(12, i, s));\
+a(op | 0x1f, mask | 0x3f, PM(13, i, s));\
+a(op | 0x27, mask | 0x3f, PM(14, i, s));\
 }
 #define MEE(op, s) {\
 ME(op | 0x0000, 0xf1c0, 0, s);\
@@ -85,69 +85,73 @@ ME(op | 0x0ec0, 0xffc0, 13, s);\
 ME(op | 0x0f00, 0xffc0, 14, s);\
 }
 #define CC(op, mask, x) {\
-add(op | 0x000, mask, PI(x, 0));\
-add(op | 0x100, mask, PI(x, 1));\
-add(op | 0x200, mask, PI(x, 2));\
-add(op | 0x300, mask, PI(x, 3));\
-add(op | 0x400, mask, PI(x, 4));\
-add(op | 0x500, mask, PI(x, 5));\
-add(op | 0x600, mask, PI(x, 6));\
-add(op | 0x700, mask, PI(x, 7));\
-add(op | 0x800, mask, PI(x, 8));\
-add(op | 0x900, mask, PI(x, 9));\
-add(op | 0xa00, mask, PI(x, 10));\
-add(op | 0xb00, mask, PI(x, 11));\
-add(op | 0xc00, mask, PI(x, 12));\
-add(op | 0xd00, mask, PI(x, 13));\
-add(op | 0xe00, mask, PI(x, 14));\
-add(op | 0xf00, mask, PI(x, 15));\
+a(op | 0x000, mask, PI(x, 0));\
+a(op | 0x100, mask, PI(x, 1));\
+a(op | 0x200, mask, PI(x, 2));\
+a(op | 0x300, mask, PI(x, 3));\
+a(op | 0x400, mask, PI(x, 4));\
+a(op | 0x500, mask, PI(x, 5));\
+a(op | 0x600, mask, PI(x, 6));\
+a(op | 0x700, mask, PI(x, 7));\
+a(op | 0x800, mask, PI(x, 8));\
+a(op | 0x900, mask, PI(x, 9));\
+a(op | 0xa00, mask, PI(x, 10));\
+a(op | 0xb00, mask, PI(x, 11));\
+a(op | 0xc00, mask, PI(x, 12));\
+a(op | 0xd00, mask, PI(x, 13));\
+a(op | 0xe00, mask, PI(x, 14));\
+a(op | 0xf00, mask, PI(x, 15));\
 }
 #define BCC(op, mask, s) {\
-add(op | 0x000, mask, PIS(bcc, 0, s));\
-add(op | 0x100, mask, PIS(bcc, 1, s));\
-add(op | 0x200, mask, PIS(bcc, 2, s));\
-add(op | 0x300, mask, PIS(bcc, 3, s));\
-add(op | 0x400, mask, PIS(bcc, 4, s));\
-add(op | 0x500, mask, PIS(bcc, 5, s));\
-add(op | 0x600, mask, PIS(bcc, 6, s));\
-add(op | 0x700, mask, PIS(bcc, 7, s));\
-add(op | 0x800, mask, PIS(bcc, 8, s));\
-add(op | 0x900, mask, PIS(bcc, 9, s));\
-add(op | 0xa00, mask, PIS(bcc, 10, s));\
-add(op | 0xb00, mask, PIS(bcc, 11, s));\
-add(op | 0xc00, mask, PIS(bcc, 12, s));\
-add(op | 0xd00, mask, PIS(bcc, 13, s));\
-add(op | 0xe00, mask, PIS(bcc, 14, s));\
-add(op | 0xf00, mask, PIS(bcc, 15, s));\
+a(op | 0x000, mask, PIS(bcc, 0, s));\
+a(op | 0x100, mask, PIS(bcc, 1, s));\
+a(op | 0x200, mask, PIS(bcc, 2, s));\
+a(op | 0x300, mask, PIS(bcc, 3, s));\
+a(op | 0x400, mask, PIS(bcc, 4, s));\
+a(op | 0x500, mask, PIS(bcc, 5, s));\
+a(op | 0x600, mask, PIS(bcc, 6, s));\
+a(op | 0x700, mask, PIS(bcc, 7, s));\
+a(op | 0x800, mask, PIS(bcc, 8, s));\
+a(op | 0x900, mask, PIS(bcc, 9, s));\
+a(op | 0xa00, mask, PIS(bcc, 10, s));\
+a(op | 0xb00, mask, PIS(bcc, 11, s));\
+a(op | 0xc00, mask, PIS(bcc, 12, s));\
+a(op | 0xd00, mask, PIS(bcc, 13, s));\
+a(op | 0xe00, mask, PIS(bcc, 14, s));\
+a(op | 0xf00, mask, PIS(bcc, 15, s));\
 }
 
 static struct Insn {
-	using pmf_t = void (M68000::*)(uint16_t);
-	using pf_t = void (*)(M68000 *, uint16_t);
+	using pmf_t = void (Tiny68020::*)(uint16_t);
+	using pf_t = void (*)(Tiny68020 *, uint16_t);
 	Insn() {
+		union { pmf_t pmf; pf_t p; } cnv; // not portable
 		for (int i = 0; i < 0x10000; i++) fn[i] = P(undef);
 		IS3(0x0000, 0xffc0, ori_ea);
-		add(0x003c, 0xffff, P(ori_ccr));
-		add(0x007c, 0xffff, P(ori_sr));
-		add(0x00c0, 0xf9c0, P(x00c0));
+		a(0x003c, 0xffff, P(ori_ccr));
+		a(0x007c, 0xffff, P(ori_sr));
+		a(0x00c0, 0xf9c0, P(x00c0));
 		MODE(0x0100, 0xf1c0, btst);
 		MODE(0x0140, 0xf1c0, bchg);
 		MODE(0x0180, 0xf1c0, bclr);
 		MODE(0x01c0, 0xf1c0, bset);
-		add(0x0108, 0xf138, P(movep)); // overwrite bitop
+		a(0x0108, 0xf138, P(movep)); // overwrite bitop
 		IS3(0x0200, 0xffc0, andi_ea);
-		add(0x023c, 0xffff, P(andi_ccr));
-		add(0x027c, 0xffff, P(andi_sr));
+		a(0x023c, 0xffff, P(andi_ccr));
+		a(0x027c, 0xffff, P(andi_sr));
 		IS3(0x0400, 0xffc0, subi);
 		IS3(0x0600, 0xffc0, addi);
 		MODE(0x0800, 0xffc0, btst_i);
 		MODE(0x0840, 0xffc0, bchg_i);
 		MODE(0x0880, 0xffc0, bclr_i);
-		add(0x08c0, 0xf9c0, P(x08c0));
+		a(0x08c0, 0xf9c0, P(x08c0));
 		MODE(0x08c0, 0xffc0, bset_i); // overwrite x08c0
+		MODES(0x0ac0, 0xffc0, cas, 0); // overwrite x08c0
+		MODES(0x0cc0, 0xffc0, cas, 1); // overwrite x08c0
+		MODES(0x0ec0, 0xffc0, cas, 2); // overwrite x08c0
 		IS3(0x0a00, 0xffc0, eori_ea);
-		add(0x0a3c, 0xffff, P(eori_ccr));
-		add(0x0a7c, 0xffff, P(eori_sr));
+		a(0x0a3c, 0xffff, P(eori_ccr));
+		a(0x0a7c, 0xffff, P(eori_sr));
 		IS3(0x0c00, 0xffc0, cmpi);
 		MEE(0x1000, 0);
 		MEE(0x2000, 2);
@@ -166,41 +170,40 @@ static struct Insn {
 		IS3(0x4600, 0xffc0, _not);
 		MODE(0x46c0, 0xffc0, move_ea_sr);
 		MODE(0x4800, 0xffc0, nbcd);
-		add(0x4808, 0xfff8, P(link_l)); // overwrite nbcd
+		a(0x4808, 0xfff8, P(link_l)); // overwrite nbcd
 		MODE(0x4840, 0xffc0, pea);
-		add(0x4840, 0xfff8, P(swap)); // overwrite pea
-		add(0x4848, 0xfff8, P(bkpt)); // overwrite pea
+		a(0x4840, 0xfff8, P(swap)); // overwrite pea
+		a(0x4848, 0xfff8, P(bkpt)); // overwrite pea
 		MODES(0x4880, 0xffc0, movem_rm, 1);
-		add(0x4880, 0xfff8, P(ext_w)); // overwrite movem_rm
+		a(0x4880, 0xfff8, P(ext_w)); // overwrite movem_rm
 		MODES(0x48c0, 0xffc0, movem_rm, 2);
-		add(0x48c0, 0xfff8, P(ext_l));
-		add(0x49c0, 0xfff8, P(ext_bl));
+		a(0x48c0, 0xfff8, P(ext_l));
+		a(0x49c0, 0xfff8, P(ext_bl));
 		IS3(0x4a00, 0xffc0, tst);
 		MODE(0x4ac0, 0xffc0, tas);
 		MODE(0x4c00, 0xffc0, mul_l);
 		MODE(0x4c40, 0xffc0, div_l);
 		MODES(0x4c80, 0xffc0, movem_mr, 1);
 		MODES(0x4cc0, 0xffc0, movem_mr, 2);
-		add(0x4e40, 0xfff0, P(trap));
-		add(0x4e50, 0xfff8, P(link_w));
-		add(0x4e58, 0xfff8, P(unlk));
-		add(0x4e68, 0xfff8, P(move_usp_an));
-		add(0x4e60, 0xfff8, P(move_an_usp));
-		add(0x4e70, 0xffff, P(reset));
-		add(0x4e71, 0xffff, P(nop));
-		add(0x4e72, 0xffff, P(stop));
-		add(0x4e73, 0xffff, P(rte));
-		add(0x4e74, 0xffff, P(rtd));
-		add(0x4e75, 0xffff, P(rts));
-		add(0x4e76, 0xffff, P(trapv));
-		add(0x4e77, 0xffff, P(rtr));
-		add(0x4e7a, 0xfffe, P(movec));
+		a(0x4e40, 0xfff0, P(trap));
+		a(0x4e50, 0xfff8, P(link_w));
+		a(0x4e58, 0xfff8, P(unlk));
+		a(0x4e68, 0xfff8, P(move_usp_an));
+		a(0x4e60, 0xfff8, P(move_an_usp));
+		a(0x4e70, 0xffff, P(reset));
+		a(0x4e71, 0xffff, P(nop));
+		a(0x4e73, 0xffff, P(rte));
+		a(0x4e74, 0xffff, P(rtd));
+		a(0x4e75, 0xffff, P(rts));
+		a(0x4e76, 0xffff, P(trapv));
+		a(0x4e77, 0xffff, P(rtr));
+		a(0x4e7a, 0xfffe, P(movec));
 		MODE(0x4e80, 0xffc0, jsr);
 		MODE(0x4ec0, 0xffc0, jmp);
 		IS3(0x5000, 0xf1c0, addq);
-		add(0x5008, 0xf138, P(addqa));
+		a(0x5008, 0xf138, P(addqa));
 		IS3(0x5100, 0xf1c0, subq);
-		add(0x5108, 0xf138, P(subq_a));
+		a(0x5108, 0xf138, P(subq_a));
 		MODES(0x50c0, 0xffc0, scc, 0);
 		MODES(0x51c0, 0xffc0, scc, 1);
 		MODES(0x52c0, 0xffc0, scc, 2);
@@ -223,15 +226,15 @@ static struct Insn {
 		BCC(0x6000, 0xff00, 0);
 		BCC(0x6000, 0xffff, 2);
 		BCC(0x60ff, 0xffff, 4);
-		add(0x6100, 0xff00, PI(bsr, 0)); // overwrite bcc
-		add(0x6100, 0xffff, PI(bsr, 2)); // overwrite bcc
-		add(0x61ff, 0xffff, PI(bsr, 4)); // overwrite bcc
-		add(0x7000, 0xf100, P(moveq));
+		a(0x6100, 0xff00, PI(bsr, 0)); // overwrite bcc
+		a(0x6100, 0xffff, PI(bsr, 2)); // overwrite bcc
+		a(0x61ff, 0xffff, PI(bsr, 4)); // overwrite bcc
+		a(0x7000, 0xf100, P(moveq));
 		IS3(0x8000, 0xf1c0, or_ea_d);
 		MODE(0x80c0, 0xf1c0, divu_w);
 		IS3(0x8100, 0xf1c0, or_d_ea);
-		add(0x8100, 0xf1f0, P(sbcd_r)); // overwrite or_d_ea
-		add(0x8108, 0xf1f8, P(sbcd_m)); // overwrite or_d_ea
+		a(0x8100, 0xf1f0, P(sbcd_r)); // overwrite or_d_ea
+		a(0x8108, 0xf1f8, P(sbcd_m)); // overwrite or_d_ea
 		MODE(0x81c0, 0xf1c0, divs_w);
 		IS3(0x9000, 0xf1c0, sub_ea_d);
 		MODE(0x90c0, 0xf1c0, suba_w);
@@ -239,7 +242,7 @@ static struct Insn {
 		S3(0x9100, 0xf1f8, subx_r); // overwrite sub_d_ea
 		S3(0x9108, 0xf1f8, subx_m); // overwrite sub_d_ea
 		MODE(0x91c0, 0xf1c0, suba_l);
-		add(0xa000, 0xf000, P(a_line));
+		a(0xa000, 0xf000, P(a_line));
 		IS3(0xb000, 0xf1c0, cmp);
 		MODE(0xb0c0, 0xf1c0, cmpa_w);
 		IS3(0xb100, 0xf1c0, eor_d_ea);
@@ -248,11 +251,11 @@ static struct Insn {
 		IS3(0xc000, 0xf1c0, and_ea_d);
 		MODE(0xc0c0, 0xf1c0, mulu_w);
 		IS3(0xc100, 0xf1c0, and_d_ea);
-		add(0xc140, 0xf1f8, P(exg_dd));
-		add(0xc148, 0xf1f8, P(exg_aa));
-		add(0xc188, 0xf1f8, P(exg_da));
-		add(0xc100, 0xf1f8, P(abcd_r)); // overwrite and_d_ea
-		add(0xc108, 0xf1f8, P(abcd_m)); // overwrite and_d_ea
+		a(0xc140, 0xf1f8, P(exg_dd));
+		a(0xc148, 0xf1f8, P(exg_aa));
+		a(0xc188, 0xf1f8, P(exg_da));
+		a(0xc100, 0xf1f8, P(abcd_r)); // overwrite and_d_ea
+		a(0xc108, 0xf1f8, P(abcd_m)); // overwrite and_d_ea
 		MODE(0xc1c0, 0xf1c0, muls_w);
 		IS3(0xd000, 0xf1c0, add_ea_d);
 		MODE(0xd0c0, 0xf1c0, adda_w);
@@ -260,21 +263,20 @@ static struct Insn {
 		MODE(0xd1c0, 0xf1c0, adda_l);
 		S3(0xd100, 0xf1f8, addx_r); // overwrite add_d_ea
 		S3(0xd108, 0xf1f8, addx_m); // overwrite add_d_ea
-		add(0xe000, 0xf0c0, PIS(sftrot, 0, 0));
-		add(0xe040, 0xf0c0, PIS(sftrot, 0, 1));
-		add(0xe080, 0xf0c0, PIS(sftrot, 0, 2));
+		a(0xe000, 0xf0c0, PIS(sftrot, 0, 0));
+		a(0xe040, 0xf0c0, PIS(sftrot, 0, 1));
+		a(0xe080, 0xf0c0, PIS(sftrot, 0, 2));
 		MODES(0xe0c0, 0xf0c0, sftrot, 3);
 		MODE(0xe8c0, 0xf8c0, bitfield);
-		add(0xf000, 0xf000, P(f_line));
+		a(0xf000, 0xf000, P(f_line));
 	}
-	void add(uint16_t op, uint16_t mask, pf_t f) {
+	void a(uint16_t op, uint16_t mask, pf_t f) {
 		int lim = (op & 0xf000) + 0x1000;
 		for (int i = op & 0xf000; i < lim; i++)
 			if ((i & mask) == op) fn[i] = f;
 	}
-	void exec1(M68000 *mpu, uint16_t op) const { fn[op](mpu, op); }
-	pf_t fn[0x10000];
-	inline static union { pmf_t pmf; pf_t p; } cnv; // not portable
+	static void exec1(Tiny68020 *mpu, uint16_t op) { fn[op](mpu, op); }
+	static inline pf_t fn[0x10000];
 } insn;
 
 static void error() {
@@ -282,21 +284,22 @@ static void error() {
 	exit(1);
 }
 
-M68000::M68000() : m(nullptr), intrVecFunc(nullptr), startIO(0), endIO(0) {
-#if M68000_TRACE
+Tiny68020::Tiny68020() : m(nullptr), intrVecFunc(nullptr), startIO(0), endIO(0) {
+#if TINY68020_TRACE
 	memset(tracebuf, 0, sizeof(tracebuf));
 	tracep = tracebuf;
 #endif
 }
 
-void M68000::Reset() {
+void Tiny68020::Reset() {
 	memset(d, 0, sizeof(d));
 	memset(a, 0, sizeof(a));
 	memset(cr, 0, sizeof(cr));
 	intreq = 0;
-	stopf = false;
 	SetupFlags(0);
 	sr = MS | MI;
+	trace_pc = 0;
+	trace_flag = 0;
 	a[7] = get4(0);
 	pc = get4(4);
 }
@@ -304,14 +307,14 @@ void M68000::Reset() {
 // RW: 0...address only 1...read 2...write 3...modify
 // M: 0-6:0-6 7:none 8:7-0 9:7-1 10:7-2 11:7-3 12:7-4 13:3,REG7 14:4,REG7 15:none
 // S: 0...byte 1...word 2...long
-template<int RW, int M, int S, typename F> M68000::u32 M68000::ea(int reg, F func) {
+template<int RW, int M, int S, typename F> Tiny68020::u32 Tiny68020::ea(int reg, F func) {
 	auto exmode = [&](u32 base) {
 		u16 ext = fetch2();
 		u32 t;
 		if constexpr (MPU_TYPE >= 68020) {
 			auto idx = [&]{
 				u32 t = (ext & 0x8000 ? a : d)[ext >> 12 & 7];
-				return (ext & 0x800 ? t : (s16)t) << ext >> 9 & 3;
+				return (ext & 0x800 ? t : (s16)t) << (ext >> 9 & 3);
 			};
 			auto disp = [&](int sw)->u32 {
 				switch (sw & 3) {
@@ -378,14 +381,14 @@ template<int RW, int M, int S, typename F> M68000::u32 M68000::ea(int reg, F fun
 	return adr;
 }
 
-template<int M, int S> void M68000::movem_rm(u16 op) {
+template<int M, int S> void Tiny68020::movem_rm(u16 op) {
 	const u32 ofs = S << 1, list = fetch2();
 	u32 i, adr = ea<0, M, S>(op, []{});
 	if constexpr (M == 4 || M == 14) {
 		for (i = 0; i < 8; i++)
 			if (list & 1 << i) {
-				if constexpr (MPU_TYPE >= 68020) { a[R0] = adr -= ofs; st<S>(adr, a[7 - i]); }
-				else st<S>(adr -= ofs, a[7 - i]);
+				/*if constexpr (MPU_TYPE >= 68020) { a[R0] = adr -= ofs; st<S>(adr, a[7 - i]); }
+				else */st<S>(adr -= ofs, a[7 - i]);
 			}
 		for (i = 0; i < 8; i++)
 			if (list & 0x100 << i) st<S>(adr -= ofs, d[7 - i]);
@@ -399,7 +402,7 @@ template<int M, int S> void M68000::movem_rm(u16 op) {
 	}
 }
 
-template<int M, int S> void M68000::movem_mr(u16 op) {
+template<int M, int S> void Tiny68020::movem_mr(u16 op) {
 	const u32 ofs = S << 1, list = fetch2();
 	u32 i, adr = ea<0, M, S>(op, []{});
 	if constexpr (S == 1) {
@@ -417,16 +420,20 @@ template<int M, int S> void M68000::movem_mr(u16 op) {
 	if constexpr (M == 3 || M == 13) a[R0] = adr; // write back if (An)+
 }
 
-void M68000::movec(u16 op) {
-	u16 t = fetch2();
-	if (t >= 8) t -= 0x7f8;
-	if (t < 16) {
-		if (op & 1) cr[t] = (t & 0x8000 ? d : a)[t >> 12 & 7];
-		else (t & 0x8000 ? d : a)[t >> 12 & 7] = cr[t];
+void Tiny68020::movec(u16 op) {
+	if (!(sr & MS)) Trap(8);
+	u16 t = fetch2(), x = t & 0xfff;
+	if (x >= 8) x -= 0x7f8;
+	if (x < 16) {
+		if (op & 1) {
+			cr[x] = (t & 0x8000 ? a : d)[t >> 12 & 7];
+			if (x == 2) cr[2] &= 0x80008000;
+		}
+		else (t & 0x8000 ? a : d)[t >> 12 & 7] = cr[x];
 	}
 }
 
-void M68000::movep(u16 op) {
+void Tiny68020::movep(u16 op) {
 	u32 t, adr = a[R0] + fetch2();
 	switch (op & 0xc0) {
 		case 0: // movep.w (d16,Ay),Dx
@@ -454,7 +461,7 @@ void M68000::movep(u16 op) {
 	}
 }
 
-template<int M> void M68000::mul_l(u16 op) {
+template<int M> void Tiny68020::mul_l(u16 op) {
 	u32 t = fetch2(), f64 = t & 0x400;
 	u32 &dq = d[t >> 12 & 7], &dr = d[t & 7];
 	if (t & 0x800) // muls.l
@@ -473,43 +480,41 @@ template<int M> void M68000::mul_l(u16 op) {
 		});
 }
 
-template<int M> void M68000::divs_w(u16 op) { // divs.w
-	auto divs = [&](s16 s, s32 d)->s32 {
-		if (s) {
-			s32 q = d / s;
-			if (q == (s16)q) return flogic(d % s << 16 | (q & 0xffff), 1);
+template<int M> void Tiny68020::divs_w(u16 op) { // divs.w
+	ea<1, M, 1>(op, [&](s16 v) {
+		s32 r = d[R9];
+		if (v) {
+			s32 q = r / v;
+			if (q == (s16)q) r = flogic(r % v << 16 | (q & 0xffff), 1);
 			else fset0(VS);
 		}
 		else { fset0(C0); Trap(5); }
-		return d;
-	};
-	ea<1, M, 1>(op, [&](s16 v) { stD<2>(R9, divs(v, d[R9])); });
+		stD<2>(R9, r);
+	});
 }
 
-template<int M> void M68000::divu_w(u16 op) { // divu.w
-	auto divu = [&](u16 s, u32 d) {
-		if (s) {
-			u32 q = d / s;
-			if (q == (u16)q) return flogic(d % s << 16 | (q & 0xffff), 1);
+template<int M> void Tiny68020::divu_w(u16 op) { // divu.w
+	ea<1, M, 1>(op, [&](u16 v) {
+		u32 r = d[R9];
+		if (v) {
+			u32 q = r / v;
+			if (q == (u16)q) r = flogic(r % v << 16 | (q & 0xffff), 1);
 			else fset0(VS);
 		}
 		else { fset0(C0); Trap(5); }
-		return d;
-	};
-	ea<1, M, 1>(op, [&](u16 v) { stD<2>(R9, divu(v, d[R9])); });
+		stD<2>(R9, r);
+	});
 }
 
-template<int M> void M68000::div_l(u16 op) {
+template<int M> void Tiny68020::div_l(u16 op) {
 	u32 t = fetch2(), f64 = t & 0x400;
-	u32 &dq = d[t >> 12 & 7], &dr = d[t & 7];
 	if (t & 0x800) // divs.l
 		ea<1, M, 2>(op, [&](s32 s) {
 			if (s) {
-				s64 q = dq;
-				if (f64) q |= (s64)dr << 32;
-				dr = q % s;
+				s64 q = f64 ? d[t >> 12 & 7] | (s64)d[t & 7] << 32 : (s32)d[t >> 12 & 7];
+				stD<2>(t & 7, q % s);
 				q /= s;
-				if (q == (s32)q) dq = flogic((s32)q, 2);
+				if (q == (s32)q) stD<2>(t >> 12 & 7, flogic((s32)q, 2));
 				else fset0(VS);
 			}
 			else { fset0(C0); Trap(5); }
@@ -517,18 +522,17 @@ template<int M> void M68000::div_l(u16 op) {
 	else // divu.l
 		ea<1, M, 2>(op, [&](u32 s) {
 			if (s) {
-				u64 q = dq;
-				if (f64) q |= (u64)dr << 32;
-				dr = q % s;
+				u64 q = d[t >> 12 & 7] | (f64 ? (u64)d[t & 7] << 32 : 0);
+				stD<2>(t & 7, q % s);
 				q /= s;
-				if (q == (u32)q) dq = flogic((u32)q, 2);
+				if (q == (u32)q) stD<2>(t >> 12 & 7, flogic((u32)q, 2));
 				else fset0(VS);
 			}
 			else { fset0(C0); Trap(5); }
 		});
 }
 
-template<int W, int M, typename F> void M68000::bitop(u16 op, F func) {
+template<int W, int M, typename F> void Tiny68020::bitop(u16 op, F func) {
 	u32 m;
 	if constexpr ((W & 2) != 0) m = d[R9];
 	else m = fetch2();
@@ -538,15 +542,19 @@ template<int W, int M, typename F> void M68000::bitop(u16 op, F func) {
 	else ea<1, M, M ? 0 : 2>(op, [&](u32 v) { fbtst(v & m, M ? 0 : 2); });
 }
 
-template<int M> void M68000::bitfield(u16 op) { // M68000PRM.pdf page 1-29
-	u32 i, adr = 0, t = fetch2(), ofs = t & 0x800 ? d[t >> 6 & 7] : t >> 6 & 0x1f;
-	u32 width = ((t & 0x20 ? d[t & 7] : t) - 1 & 0x1f) + 1, bofs = 0x40 - (ofs & 0x1f) - width;
+template<int M> void Tiny68020::bitfield(u16 op) { // M68000PRM.pdf page 1-29
+	u32 i, adr = 0, t = fetch2(), width = ((t & 0x20 ? d[t & 7] : t) - 1 & 0x1f) + 1, bofs = 0x40 - width;
+	s32 ofs = t & 0x800 ? d[t >> 6 & 7] : t >> 6 & 0x1f;
 	u64 data;
 	if constexpr (M != 0) {
 		adr = ea<0, M, 0>(op, []{}) + (ofs >> 3);
 		data = (u64)ld4(adr) << 32 | ld4(adr + 4);
+		bofs -= ofs & 7;
 	}
-	else data = (u64)d[R0] << 32;
+	else {
+		data = (u64)d[R0] << 32;
+		bofs -= ofs & 0x1f;
+	}
 	auto ext = [&]{ return fbf(u32(data >> bofs & (1LL << width) - 1), width); };
 	auto mask = [&]{ return ((1LL << width) - 1) << bofs; };
 	switch (op & 0x700) {
@@ -554,13 +562,13 @@ template<int M> void M68000::bitfield(u16 op) { // M68000PRM.pdf page 1-29
 		case 0x100: stD<2>(t >> 12 & 7, ext()); return; // bfextu
 		case 0x200: ext(); data ^= mask(); break; // bfchg
 		case 0x300: stD<2>(t >> 12 & 7, s32(ext() << (32 - width)) >> (32 - width)); return; // bfexts
-		case 0x400: ext(); data &= mask(); break; // bfclr
+		case 0x400: ext(); data &= ~mask(); break; // bfclr
 		case 0x500: // bfffo
 			i = 0;
 			for (u32 d1 = ext(), m1 =  1 << (width - 1); i < width && !(d1 & m1); i++, m1 >>= 1)
 				;
 			d[t >> 12 & 7] = ofs + i;
-			break;
+			return;
 		case 0x600: ext(); data |= mask(); break; //bfset
 		case 0x700: data = (data & ~mask()) | ((u64)fbf(d[t >> 12 & 7], width) << bofs & mask()); break; // bfins
 	}
@@ -571,7 +579,7 @@ template<int M> void M68000::bitfield(u16 op) { // M68000PRM.pdf page 1-29
 	else d[R0] = data >> 32;
 }
 
-template <int M, int S> void M68000::sftrot(u16 op) {
+template <int M, int S> void Tiny68020::sftrot(u16 op) {
 	static constexpr u32 dm[] = {
 		XSR | NS | ZS | V0 | CSR, XSR | NS | ZS | V0 | CSR, XSR | NS | ZS | V0 | CXR, NS | ZS | V0 | CSR,
 		XSL | NS | ZS | VSL | CSL, XSL | NS | ZS | V0 | CSL, XSL | NS | ZS | V0 | CXL, NS | ZS | V0 | CSL
@@ -583,38 +591,38 @@ template <int M, int S> void M68000::sftrot(u16 op) {
 				if constexpr (S == 0) v = sop & 3 ? (u8)v : (s8)v;
 				if constexpr (S == 1) v = sop & 3 ? (u16)v : (s16)v;
 				s = sop & 2 ? (sop & 3) == 2 ? s % ((8 << S) + 1) : s & (8 << S) - 1 : s > bits ? bits : s;
-				stD<S>(R0, fset(dm[sop], s, v, opfunc(v, s), S));
+				stD<S>(R0, fset(dm[sop], s, v, (u32)opfunc(v, s), S));
 			}
 			else fset2(NS | ZS | V0 | C0, v, S);
 		}
-		else ea<3, M, 1>(op, [&](u32 v) { return fset(dm[sop], 1, v, opfunc(v, 1), 1); }); // memory
+		else ea<3, M, 1>(op, [&](u32 v) { return fset(dm[sop], 1, v, (u32)opfunc(v, 1), 1); }); // memory
 	};
 	switch (sop) {
 		case 0: // asr
-			f([&](u32 v, u32 s) { return v >> s | (v >> (bits - 1) & 1 ? -1 << (bits - s) : 0); });
+			f([&](u64 v, u32 s) { return v >> s | (v >> (bits - 1) & 1 ? -1 << (bits - s) : 0); });
 			break;
 		case 1: // lsr
-			f([&](u32 v, u32 s) { return v >> s; });
+			f([&](u64 v, u32 s) { return v >> s; });
 			break;
 		case 2: // roxr
-			f([&](u32 v, u32 s) { u32 t = bits + 1 - s; return v >> s | (t < 32 ? v << t : 0) | X() << (bits - s); });
+			f([&](u64 v, u32 s) { u32 t = bits + 1 - s; return v >> s | (t < 32 ? v << t : 0) | X() << (bits - s); });
 			break;
 		case 3: // ror
-			f([&](u32 v, u32 s) { return v >> s | v << (bits - s); });
+			f([&](u64 v, u32 s) { return v >> s | v << (bits - s); });
 			break;
 		default: // asl/lsl
-			f([&](u32 v, u32 s) { return v << s; });
+			f([&](u64 v, u32 s) { return v << s; });
 			break;
 		case 6: // roxl
-			f([&](u32 v, u32 s) { u32 t = bits + 1 - s; return v << s | (t < 32 ? v >> t : 0) | X() << (s - 1); });
+			f([&](u64 v, u32 s) { u32 t = bits + 1 - s; return v << s | (t < 32 ? v >> t : 0) | X() << (s - 1); });
 			break;
 		case 7: // rol
-			f([&](u32 v, u32 s) { return v << s | v >> (bits - s); });
+			f([&](u64 v, u32 s) { return v << s | v >> (bits - s); });
 			break;
 	}
 }
 
-template<int W, int M> void M68000::bcd(u16 op) {
+template<int W, int M> void Tiny68020::bcd(u16 op) {
 	auto add = [&](u8 x, u8 y) {
 		s16 l = (y & 0xf) + (x & 0xf) + X(), cl = l >= 0xa, u = (y & 0xf0) + (x & 0xf0) + (cl << 4), cu = u >= 0xa0;
 		return fbcd(cu, u - (cu ? 0xa0 : 0) + l - (cl ? 0xa : 0));
@@ -635,7 +643,7 @@ template<int W, int M> void M68000::bcd(u16 op) {
 	}
 }
 
-template <int C, int S> void M68000::bcc(u16 op) {
+template <int C, int S> void Tiny68020::bcc(u16 op) {
 	if (cond<C>()) {
 		u32 t = pc;
 		if constexpr (S == 2) t += fetch2();
@@ -646,7 +654,7 @@ template <int C, int S> void M68000::bcc(u16 op) {
 	else pc += S;
 }
 
-template <int S> void M68000::bsr(u16 op) {
+template <int S> void Tiny68020::bsr(u16 op) {
 	u32 t = pc;
 	if constexpr (S == 2) t += fetch2();
 	else if constexpr (S == 4) t += fetch4();
@@ -655,7 +663,7 @@ template <int S> void M68000::bsr(u16 op) {
 	pc = t;
 }
 
-template<int C> void M68000::dbcc(u16 op) {
+template<int C> void Tiny68020::dbcc(u16 op) {
 	if (!cond<C>()) {
 		s16 s = d[R0] - 1;
 		stD<1>(R0, s);
@@ -664,7 +672,7 @@ template<int C> void M68000::dbcc(u16 op) {
 	else pc += 2;
 }
 
-void M68000::rte(u16) {
+void Tiny68020::rte(u16) {
 	u32 t = pop2();
 	pc = pop4();
 	SetSR(t);
@@ -672,26 +680,35 @@ void M68000::rte(u16) {
 		if ((pop2() & 0xf000) == 0x2000) a[7] += 4;
 }
 
-void M68000::SetSR(u16 data, bool perm) {
+template <int M, int S> void Tiny68020::cas(u16 op) {
+	u16 t = fetch2();
+	ea<1, M, S>(op, [&](u32 v) {
+		if (fcmp(d[t & 7], v, v - d[t & 7], S)) stD<S>(t & 7, v);
+		else ea<2, M, S>(op, [&]{ return d[t >> 6 & 7]; });
+	});
+}
+
+void Tiny68020::SetSR(u16 data, bool perm) {
 	if (!perm && !(sr & MS) && data & MS) Trap(8);
 	cr[sr & MS ? sr & MM ? CR_MSP : CR_ISP : CR_USP] = a[7];
 	a[7] = cr[data & MS ? data & MM ? CR_MSP : CR_ISP : CR_USP];
 	SetupFlags(sr = data);
+	if (data & MT) { trace_pc = pc; trace_flag = 2; }
 }
 
-void M68000::Trap(u32 vector) {
+void Tiny68020::Trap(u32 vector, u32 param) {
 	if (vector >= 0x100) {
 		fprintf(stderr, "ignored trap vector: %d\n", vector);
 		return;
 	}
-	u16 sr0 = (sr & 0xffe0) | ResolvFlags();
-	SetSR(sr0 | MS, true);
+	u16 sr0 = (sr & 0xff00) | ResolvFlags();
+	SetSR((sr0 & ~MT) | MS, true);
 	if constexpr (MPU_TYPE >= 68020) {
-		if (vector >= 5 && vector <= 7) {
-			push4(pc);
-			push2(0x2000 | (vector & 0x3ff));
+		if (vector >= 5 && vector <= 9) {
+			push4(param);
+			push2(0x2000 | (vector << 2 & 0xffc));
 		}
-		else push2(vector & 0x3ff);
+		else push2(vector << 2 & 0xffc);
 	}
 	push4(pc);
 	push2(sr0);
@@ -702,44 +719,35 @@ void M68000::Trap(u32 vector) {
 	}
 }
 
-int M68000::Execute(int n) {
+int Tiny68020::Execute(int n) {
 	int clock = 0;
 	do {
-#ifndef TEST68K
+		if (trace_flag && !--trace_flag) Trap(9, trace_pc);
 		if (intreq > (sr >> LI & 7) || intreq == 7) {
 			int i = intreq;
 			intreq = 0; // an interrupt may occur in intrVecFunc()
 			Trap(intrVecFunc ? intrVecFunc(i) : 24 + i);
 			sr = (sr & ~MI) | i << LI;
-			stopf = false;
 		}
-#endif
-//		if (stopf) return 0;
-#if M68000_TRACE
+#if TINY68020_TRACE
 		tracep->pc = pc;
 		tracep->index = 0;
 #endif
-		insn.exec1(this, fetch2());
-#ifdef TEST68K
-		if (pc == 0xf000) {
-			printf("TEST PASSED.\n");
-			exit(0);
-		}
-#endif
-#if M68000_TRACE
+		Insn::exec1(this, fetch2());
+#if TINY68020_TRACE
 		tracep->ccr = ResolvFlags();
-#if M68000_TRACE > 1
+#if TINY68020_TRACE > 1
 		if (++tracep >= tracebuf + TRACEMAX - 1) StopTrace();
 #else
 		if (++tracep >= tracebuf + TRACEMAX) tracep = tracebuf;
 #endif
 #endif
 		clock += 10; // average 68000 CPI (provisional)
-	} while (/* !stopf && */clock < n);
-	return stopf ? 0 : clock - n;
+	} while (clock < n);
+	return clock - n;
 }
 
-template<int C> int M68000::cond() {
+template<int C> int Tiny68020::cond() {
 	if constexpr (C == 1) return false;
 	if constexpr (C == 2) return !ResolvC() && !ResolvZ();
 	if constexpr (C == 3) return ResolvC() || ResolvZ();
@@ -761,7 +769,7 @@ template<int C> int M68000::cond() {
 #define MSB_N	((8 << p->size) - 1)
 #define IS0		!(p->r & u32((1LL << (8 << p->size)) - 1))
 
-int M68000::ResolvC() {
+int Tiny68020::ResolvC() {
 	u32 sw = 0;
 	FlagDecision *p;
 	for (p = fp - 1; p >= fbuf && !(sw = p->dm & 0xf); p--)
@@ -795,7 +803,7 @@ int M68000::ResolvC() {
 	return 0;
 }
 
-int M68000::ResolvV() {
+int Tiny68020::ResolvV() {
 	u32 sw = 0;
 	FlagDecision *p;
 	for (p = fp - 1; p >= fbuf && !(sw = p->dm & 0xf0); p--)
@@ -828,7 +836,7 @@ int M68000::ResolvV() {
 	return 0;
 }
 
-int M68000::ResolvZ() {
+int Tiny68020::ResolvZ() {
 	u32 sw = 0;
 	FlagDecision *p;
 	for (p = fp - 1; p >= fbuf && (!(sw = p->dm & 0xf00) || (sw == ZSX && IS0)); p--)
@@ -852,7 +860,7 @@ int M68000::ResolvZ() {
 	return 0;
 }
 
-int M68000::ResolvN() {
+int Tiny68020::ResolvN() {
 	u32 sw = 0;
 	FlagDecision *p;
 	for (p = fp - 1; p >= fbuf && !(sw = p->dm & 0xf000); p--)
@@ -876,7 +884,7 @@ int M68000::ResolvN() {
 	return 0;
 }
 
-int M68000::ResolvX() {
+int Tiny68020::ResolvX() {
 	u32 sw = 0;
 	FlagDecision *p;
 	for (p = fp - 1; p >= fbuf && (!(sw = p->dm & 0xf0000) || (sw >= XSFTROT && !p->s)); p--)
@@ -904,21 +912,21 @@ int M68000::ResolvX() {
 	return 0;
 }
 
-void M68000::SetupFlags(int x) {
+void Tiny68020::SetupFlags(int x) {
 	fp = fbuf;
 	fp->dm = XB | NB | ZB | VB | CB;
 	fp++->r = x;
 }
 
-int M68000::ResolvFlags() {
+int Tiny68020::ResolvFlags() {
 	int r = ResolvX() | ResolvN() | ResolvZ() | ResolvV() | ResolvC();
 	SetupFlags(r);
 	return r;
 }
 
-#if M68000_TRACE
+#if TINY68020_TRACE
 #include <string>
-void M68000::StopTrace() {
+void Tiny68020::StopTrace() {
 	TraceBuffer *endp = tracep;
 	int i = 0;
 	FILE *fo;
@@ -971,9 +979,9 @@ void M68000::StopTrace() {
 }
 #endif
 
-void M68000::undef(u16 op) {
+void Tiny68020::undef(u16 op) {
 	fprintf(stderr, "undefined instruction: PC=%06x OP=%04x\n", pc - 2, op);
-#if M68000_TRACE
+#if TINY68020_TRACE
 	StopTrace();
 #endif
 	exit(1);

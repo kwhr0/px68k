@@ -184,11 +184,11 @@ dma_writemem24_dword(DWORD addr, DWORD val)
 }
 
 #include "CompareProcess.h"
-#include "tiny68000.h"
-extern M68000 m68000;
+#include "Tiny68020.h"
+extern Tiny68020 tiny68020;
 struct CP : CompareProcess {
-#if M68000_TRACE
-	void Stop() { m68000.StopTrace(); }
+#if TINY68020_TRACE
+	void Stop() { tiny68020.StopTrace(); }
 #endif
 } cp;
 void setCompare(int f) {
