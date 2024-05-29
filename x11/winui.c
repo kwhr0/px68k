@@ -109,7 +109,7 @@ char menu_item_key[][15] = {"SYSTEM", "Joy/Mouse", "FDD0", "FDD1", "HDD0", "HDD1
 
 // Max # of characters is 30.
 // Max # of items including terminater `""' in each line is 15.
-char menu_items[][15][30] = {
+char menu_item_str[][15][30] = {
 	{"RESET", "NMI RESET", "QUIT", ""},
 	{"Joystick", "Mouse", ""},
 	{"dummy", "EJECT", ""},
@@ -173,14 +173,14 @@ int WinUI_get_drv_num(int key)
 static void menu_hwjoy_print(int v)
 {
 	if (v <= 1) {
-		sprintf(menu_items[M_HJS][v], "Axis%d(%s): %d",
+		sprintf(menu_item_str[M_HJS][v], "Axis%d(%s): %d",
 			v,
 			(v == 0)? "Left/Right" : "Up/Down",
 			Config.HwJoyAxis[v]);
 	} else if (v == 2) {
-		sprintf(menu_items[M_HJS][v], "Hat: %d", Config.HwJoyHat);
+		sprintf(menu_item_str[M_HJS][v], "Hat: %d", Config.HwJoyHat);
 	} else {
-		sprintf(menu_items[M_HJS][v], "Button%d: %d",
+		sprintf(menu_item_str[M_HJS][v], "Button%d: %d",
 			v - 3,
 			Config.HwJoyBtn[v - 3]);
 	}
@@ -642,7 +642,7 @@ int WinUI_Menu(int first)
 			}
 			break;
 		case ms_value:
-			if (menu_items[mkey_y][mval_y[mkey_y] + 1][0] != '\0') {
+			if (menu_item_str[mkey_y][mval_y[mkey_y] + 1][0] != '\0') {
 				mval_y[mkey_y]++;
 
 				if (menu_func[mkey_y].imm) {

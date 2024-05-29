@@ -1819,7 +1819,7 @@ void WinDraw_DrawMenu(int menu_state, int mkey_pos, int mkey_y, int *mval_y)
 				}
 			}
 		} else {
-			draw_str(menu_items[i + mkey_pos][mval_y[i + mkey_pos]]);
+			draw_str(menu_item_str[i + mkey_pos][mval_y[i + mkey_pos]]);
 		}
 	}
 

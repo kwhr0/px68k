@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E41A9E062761E72F007CD957 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E41A9E052761E72F007CD957 /* SDL2.framework */; };
 		E445F230275466DB00315C49 /* keytbl.inc in Sources */ = {isa = PBXBuildFile; fileRef = E445F20B275466D900315C49 /* keytbl.inc */; };
 		E462AB762A5A878D002A15A0 /* Tiny68020.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E462AB752A5A878D002A15A0 /* Tiny68020.cpp */; };
+		E48C648D2C06D0BF006E6A2A /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E41A9E052761E72F007CD957 /* SDL2.framework */; };
 		E496AAA527618BC700DC6F29 /* fmg_wrap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E496AA9227618BC700DC6F29 /* fmg_wrap.cpp */; };
 		E496AAA627618BC700DC6F29 /* opm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E496AA9427618BC700DC6F29 /* opm.cpp */; };
 		E496AAA727618BC700DC6F29 /* psg.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E496AA9527618BC700DC6F29 /* psg.cpp */; };
@@ -58,16 +58,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		E444CDB127547C0F0035CD43 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		E445F1B6275464AF00315C49 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -80,7 +70,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		E41A9E052761E72F007CD957 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2.framework; path = ../../../Library/Frameworks/SDL2.framework; sourceTree = "<group>"; };
+		E41A9E052761E72F007CD957 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2.framework; path = /Library/Frameworks/SDL2.framework; sourceTree = "<absolute>"; };
 		E421B7DD275DD29500A1DEC8 /* test.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = test.h; sourceTree = "<group>"; };
 		E445F1B8275464AF00315C49 /* px68k */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = px68k; sourceTree = BUILT_PRODUCTS_DIR; };
 		E445F1FB2754666A00315C49 /* mmsystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mmsystem.h; sourceTree = "<group>"; };
@@ -168,6 +158,7 @@
 		E45B751E2A2B45C300DFB4EC /* CompareProcess.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CompareProcess.h; sourceTree = "<group>"; };
 		E462AB752A5A878D002A15A0 /* Tiny68020.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Tiny68020.cpp; sourceTree = "<group>"; };
 		E462AB772A5A8793002A15A0 /* Tiny68020.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Tiny68020.h; sourceTree = "<group>"; };
+		E48C64922C06D182006E6A2A /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2.framework; path = /Library/Frameworks/SDL2.framework; sourceTree = "<absolute>"; };
 		E496AA9127618BC700DC6F29 /* misc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = misc.h; sourceTree = "<group>"; };
 		E496AA9227618BC700DC6F29 /* fmg_wrap.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fmg_wrap.cpp; sourceTree = "<group>"; };
 		E496AA9427618BC700DC6F29 /* opm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = opm.cpp; sourceTree = "<group>"; };
@@ -196,7 +187,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E41A9E062761E72F007CD957 /* SDL2.framework in Frameworks */,
+				E48C648D2C06D0BF006E6A2A /* SDL2.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -214,6 +205,7 @@
 		E445F1AF275464AF00315C49 = {
 			isa = PBXGroup;
 			children = (
+				E48C64922C06D182006E6A2A /* SDL2.framework */,
 				E445F1BA275464AF00315C49 /* px68k */,
 				E445F1B9275464AF00315C49 /* Products */,
 				E444CDAD27547C0F0035CD43 /* Frameworks */,
@@ -385,7 +377,6 @@
 				E445F1B4275464AF00315C49 /* Sources */,
 				E445F1B5275464AF00315C49 /* Frameworks */,
 				E445F1B6275464AF00315C49 /* CopyFiles */,
-				E444CDB127547C0F0035CD43 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -635,6 +626,7 @@
 				);
 				GCC_STRICT_ALIASING = YES;
 				HEADER_SEARCH_PATHS = /Library/Frameworks/SDL2.framework/Headers;
+				LD_RUNPATH_SEARCH_PATHS = /Library/Frameworks;
 				LIBRARY_SEARCH_PATHS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_LIBTOOLFLAGS = "";
@@ -662,6 +654,7 @@
 				);
 				GCC_STRICT_ALIASING = YES;
 				HEADER_SEARCH_PATHS = /Library/Frameworks/SDL2.framework/Headers;
+				LD_RUNPATH_SEARCH_PATHS = /Library/Frameworks;
 				LIBRARY_SEARCH_PATHS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_LIBTOOLFLAGS = "";
