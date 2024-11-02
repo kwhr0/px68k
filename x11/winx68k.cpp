@@ -325,11 +325,6 @@ WinX68k_Init(void)
 #ifdef NEWMPU
 		tiny68020.SetMemoryPtr(MEM);
 		tiny68020.SetIntrVecFunc(my_irqh_callback);
-#if defined(TESTLOG) || defined(CURMPU) && defined(NEWMPU)
-		tiny68020.SetIORange32(0, 0x1000000);
-#else
-		tiny68020.SetIORange32(0xc00000, 0x1000000);
-#endif
 #endif
 #ifdef CURMPU
 	  	m68000_init();
