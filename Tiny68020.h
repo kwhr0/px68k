@@ -401,7 +401,7 @@ private:
 	void undef(u16);
 	void reset(u16) { fprintf(stderr, "RESET instruction\n"); }
 	void a_line(u16) { pc -= 2; Trap(10); }
-	void f_line(u16 op) { pc -= 2; Trap(11); } // CINV,cp*,CPUSH,FPinst,MOVE16
+	void f_line(u16) { pc -= 2; Trap(11); } // CINV,cp*,CPUSH,FPinst,MOVE16
 	void nop(u16) {}
 	template <int M, int S> void cas(u16 op);
 	void bkpt(u16) { fprintf(stderr, "BKPT\n"); exit(1); }
