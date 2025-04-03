@@ -668,7 +668,7 @@ void Tiny68020::Trap(u32 vector, u32 param) {
 int Tiny68020::Execute(int n) {
 	int clock = 0;
 	do {
-		if (intreq > (sr >> LI & 7) || intreq == 7) {
+		if (intreq > (sr >> LI & 7)/* || intreq == 7*/) {
 			int i = intreq;
 			intreq = 0; // an interrupt may occur in intrVecFunc()
 			Trap(intrVecFunc ? intrVecFunc(i) : 24 + i);
@@ -687,7 +687,7 @@ int Tiny68020::Execute(int n) {
 		if (++tracep >= tracebuf + TRACEMAX) tracep = tracebuf;
 #endif
 #endif
-		clock += 10; // average 68000 CPI (provisional)
+		clock += 11; // average 68000 CPI (provisional)
 	} while (clock < n);
 	return clock - n;
 }
